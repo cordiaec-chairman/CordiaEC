@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, ExternalLink } from "lucide-react";
 import { getPost } from "@/lib/queries";
 import type { Post } from "@/lib/database.types";
 import { useLang, useT, pickField } from "@/lib/i18n";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 export default function OverseasKoreanDetail() {
   const { lang } = useLang();
@@ -83,10 +84,8 @@ export default function OverseasKoreanDetail() {
             {pickField(post, 'excerpt', lang)}
           </p>
 
-          <div className="prose prose-gray max-w-none text-gray-700 leading-relaxed">
-            {pickField(post, 'content', lang).split("\n").map((p, i) =>
-              p.trim() ? <p key={i} className="mb-4">{p.trim()}</p> : null
-            )}
+          <div className="mt-6">
+            <MarkdownRenderer content={pickField(post, 'content', lang)} />
           </div>
 
           {post.link_url && (

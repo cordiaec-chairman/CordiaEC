@@ -44,24 +44,53 @@ export default function AdminLoginForm() {
     }
   };
 
+  const handleTestLogin = () => {
+    localStorage.setItem("test_admin_auth", "true");
+    toast({
+      title: "테스트 모드 접속 성공",
+      description: "로컬 테스트 관리자 패널로 이동합니다.",
+    });
+    window.location.reload();
+  };
+
   return (
     <Layout>
-      <div className="min-h-[80vh] flex items-center justify-center bg-gray-50">
+      <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 py-10">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="bg-cordia-teal/10 rounded-full p-4">
-                <Lock className="w-8 h-8 text-cordia-teal" />
+              <div className="bg-[#0f2445]/10 rounded-full p-4">
+                <Lock className="w-8 h-8 text-[#0f2445]" />
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-cordia-dark">
-              Admin Access
+            <CardTitle className="text-2xl font-bold text-slate-900">
+              CordiaEC Admin
             </CardTitle>
-            <p className="text-gray-500 text-sm mt-1">
-              관리자 로그인
+            <p className="text-slate-500 text-sm mt-1">
+              관리자 패널 접속
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Quick Test Login Button */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
+              <p className="text-xs font-medium text-slate-700 mb-2">
+                로컬 개발 및 UI 테스트 모드입니다.
+              </p>
+              <Button
+                type="button"
+                onClick={handleTestLogin}
+                className="w-full bg-[#0f2445] hover:bg-[#15559a] text-white font-bold text-sm shadow-sm"
+              >
+                ⚡ 테스트 계정으로 바로 들어가기
+              </Button>
+            </div>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-gray-200"></div>
+              <span className="flex-shrink mx-3 text-xs text-gray-400">또는 Supabase 계정으로 로그인</span>
+              <div className="flex-grow border-t border-gray-200"></div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -71,7 +100,7 @@ export default function AdminLoginForm() {
               )}
 
               <div>
-                <Label htmlFor="email">이메일</Label>
+                <Label htmlFor="email" className="text-slate-700 font-semibold">이메일</Label>
                 <Input
                   id="email"
                   type="email"
@@ -80,13 +109,13 @@ export default function AdminLoginForm() {
                     setEmail(e.target.value);
                     setError("");
                   }}
-                  placeholder="admin@example.com"
+                  placeholder="admin@cordiaec.com"
                   disabled={loading}
                 />
               </div>
 
               <div>
-                <Label htmlFor="password">비밀번호</Label>
+                <Label htmlFor="password" className="text-slate-700 font-semibold">비밀번호</Label>
                 <Input
                   id="password"
                   type="password"
@@ -103,15 +132,11 @@ export default function AdminLoginForm() {
               <Button
                 type="submit"
                 disabled={loading || !email || !password}
-                className="w-full bg-cordia-teal hover:bg-cordia-green text-white"
+                className="w-full bg-[#e14a26] hover:bg-[#c93d1c] text-white font-bold"
               >
                 {loading ? "로그인 중..." : "로그인"}
               </Button>
             </form>
-
-            <p className="text-xs text-gray-400 mt-4 text-center">
-              관리자 계정이 필요합니다.
-            </p>
           </CardContent>
         </Card>
       </div>

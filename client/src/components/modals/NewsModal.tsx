@@ -5,6 +5,7 @@ import { Calendar, User, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import type { Post } from "@/lib/database.types";
 import { useLang, useT, pickField } from "@/lib/i18n";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface NewsModalProps {
   article: Post | null;
@@ -64,10 +65,8 @@ export default function NewsModal({ article, open, onOpenChange }: NewsModalProp
                 </p>
               </div>
 
-              <div className="text-gray-800 leading-relaxed" data-testid="text-article-content">
-                {pickField(article, 'content', lang).split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4">{paragraph}</p>
-                ))}
+              <div data-testid="text-article-content">
+                <MarkdownRenderer content={pickField(article, 'content', lang)} />
               </div>
             </div>
 

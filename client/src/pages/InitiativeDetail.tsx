@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, ChevronRight, ImageIcon } from "lucide-react";
+import { ArrowLeft, Calendar, ChevronRight, CheckCircle2, ImageIcon } from "lucide-react";
 import { getInitiative, getPosts } from "@/lib/queries";
 import type { Post } from "@/lib/database.types";
 import { useLang, useT, pickField } from "@/lib/i18n";
@@ -41,11 +41,11 @@ export default function InitiativeDetail() {
     return (
       <Layout>
         <div className="py-16 container mx-auto px-4 max-w-4xl">
-          <div className="h-8 bg-gray-200 rounded w-24 mb-8 animate-pulse" />
-          <div className="h-64 bg-gray-200 rounded-xl mb-8 animate-pulse" />
-          <div className="h-10 bg-gray-200 rounded w-3/4 mb-4 animate-pulse" />
+          <div className="h-8 bg-slate-200 rounded w-24 mb-8 animate-pulse" />
+          <div className="h-64 bg-slate-200 rounded-xl mb-8 animate-pulse" />
+          <div className="h-10 bg-slate-200 rounded w-3/4 mb-4 animate-pulse" />
           <div className="space-y-3">
-            {[...Array(6)].map((_, i) => <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" />)}
+            {[...Array(6)].map((_, i) => <div key={i} className="h-4 bg-slate-100 rounded animate-pulse" />)}
           </div>
         </div>
       </Layout>
@@ -56,8 +56,8 @@ export default function InitiativeDetail() {
     return (
       <Layout>
         <div className="py-32 text-center">
-          <p className="text-2xl text-gray-400 mb-6">이니셔티브를 찾을 수 없습니다.</p>
-          <Button onClick={() => navigate("/initiatives")} className="bg-cordia-teal text-white">
+          <p className="text-2xl text-slate-400 mb-6">이니셔티브를 찾을 수 없습니다.</p>
+          <Button onClick={() => navigate("/initiatives")} className="bg-[#0f2445] hover:bg-[#1a3a60] text-white">
             <ArrowLeft className="w-4 h-4 mr-2" />{t('initiatives.backToList')}
           </Button>
         </div>
@@ -65,13 +65,17 @@ export default function InitiativeDetail() {
     );
   }
 
+  const rawContent = pickField(initiative, 'content', lang) || "";
+  const contentLines = rawContent.split("\n").map(l => l.trim()).filter(Boolean);
+  const isBulletList = contentLines.some(l => l.startsWith("•") || l.startsWith("-"));
+
   return (
     <Layout>
       <article className="py-12 bg-white">
         <div className="container mx-auto px-4 max-w-4xl">
           <Button
             variant="ghost"
-            className="mb-8 text-gray-500 hover:text-cordia-teal -ml-2"
+            className="mb-8 text-slate-500 hover:text-[#0f2445] hover:bg-slate-100 -ml-2"
             onClick={() => navigate("/initiatives")}
             data-testid="button-back-initiatives"
           >
@@ -80,85 +84,123 @@ export default function InitiativeDetail() {
 
           {initiative && (
             <>
-              <img
-                src={initiative.image_url || ""}
-                alt={initiative.title}
-                className="w-full max-h-96 object-cover rounded-2xl mb-8"
-              />
+              <div className="w-full max-h-96 aspect-16/9 overflow-hidden rounded-2xl mb-8 bg-slate-100 border border-slate-200">
+                <img
+                  src={initiative.image_url || ""}
+                  alt={initiative.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-              <Badge className="bg-cordia-teal/10 text-cordia-teal border-cordia-teal/20 mb-4">
+              <div className="inline-flex items-center px-3 py-1 rounded bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold uppercase tracking-wider mb-4">
                 {initiative.category}
-              </Badge>
+              </div>
 
-              <h1 className="text-3xl sm:text-4xl font-bold text-cordia-dark mb-6 leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-6 leading-snug">
                 {pickField(initiative, 'title', lang)}
               </h1>
 
-              <p className="text-lg text-gray-500 border-l-4 border-cordia-teal pl-4 mb-8 italic">
-                {pickField(initiative, 'description', lang)}
-              </p>
+              {/* 개요 (Description Box) */}
+              <div className="p-5 sm:p-6 bg-slate-50 rounded-xl border-l-4 border-[#0f2445] border-y border-r border-slate-200/80 mb-10">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  {lang === "ko" ? "사업 개요" : "Overview"}
+                </h3>
+                <p className="text-base sm:text-lg text-slate-800 leading-relaxed font-medium">
+                  {pickField(initiative, 'description', lang)}
+                </p>
+              </div>
 
-              <div className="prose prose-gray max-w-none text-gray-700 leading-relaxed mb-12">
-                {pickField(initiative, 'content', lang).split("\n").map((p, i) =>
-                  p.trim() ? <p key={i} className="mb-4">{p.trim()}</p> : null
+              {/* 주요 과제 (Key Tasks) */}
+              <div className="mb-12">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span>{lang === "ko" ? "주요 과제 및 실행 계획" : "Key Tasks & Action Plans"}</span>
+                </h3>
+
+                {isBulletList ? (
+                  <div className="grid gap-3">
+                    {contentLines.map((line, i) => {
+                      const cleanText = line.replace(/^[•\-]\s*/, "");
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-start gap-3.5 p-4 rounded-xl bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all"
+                        >
+                          <CheckCircle2 className="w-5 h-5 text-[#0f2445] shrink-0 mt-0.5" />
+                          <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">
+                            {cleanText}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-4">
+                    {contentLines.map((p, i) => (
+                      <p key={i} className="text-sm sm:text-base text-slate-700 leading-relaxed">
+                        {p}
+                      </p>
+                    ))}
+                  </div>
                 )}
               </div>
             </>
           )}
 
           {/* Related News */}
-          <div className="border-t pt-10">
-            <h2 className="text-2xl font-bold text-cordia-dark mb-6">{t('initiatives.related')}</h2>
+          <div className="border-t border-slate-200 pt-10">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-6">{t('initiatives.related')}</h2>
 
             {newsLoading ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse" />
+                  <div key={i} className="h-28 bg-slate-100 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : articles.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-xl">
-                <p className="text-gray-400">{t('initiatives.relatedEmpty')}</p>
-                <p className="text-xs text-gray-400 mt-2">관리자에서 뉴스를 작성할 때 이 카테고리를 선택하면 여기에 표시됩니다.</p>
+              <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-200/70">
+                <p className="text-slate-500 font-medium text-sm">{t('initiatives.relatedEmpty')}</p>
+                <p className="text-xs text-slate-400 mt-1.5">관리자 패널에서 게시글 작성 시 이 분야를 선택하면 연동됩니다.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {articles.map((article) => (
                   <div
                     key={article.id}
                     onClick={() => navigate(`/news/${article.id}`)}
-                    className="flex items-center gap-4 bg-white border border-gray-100 rounded-xl px-4 py-4 hover:shadow-md hover:border-cordia-teal/30 transition-all cursor-pointer group"
+                    className="flex items-center gap-4 bg-white border border-slate-200/90 rounded-xl p-4 hover:shadow-md hover:border-slate-400 transition-all cursor-pointer group"
                     data-testid={`row-related-news-${article.id}`}
                   >
-                    <div className="w-32 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                    <div className="w-28 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center">
                       {article.image_url ? (
                         <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
                       ) : (
-                        <ImageIcon className="w-7 h-7 text-gray-300" />
+                        <ImageIcon className="w-6 h-6 text-slate-300" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-1">
+                      <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-[#0f2445] transition-colors line-clamp-1">
                         {pickField(article, 'title', lang)}
                       </h3>
-                      <p className="text-gray-500 text-sm line-clamp-2 mt-1">{pickField(article, 'excerpt', lang)}</p>
+                      <p className="text-slate-500 text-xs sm:text-sm line-clamp-2 mt-1 leading-relaxed">
+                        {pickField(article, 'excerpt', lang)}
+                      </p>
                     </div>
-                    <div className="shrink-0 flex flex-col items-end gap-2 text-xs text-gray-400 min-w-[100px]">
+                    <div className="shrink-0 flex flex-col items-end gap-2 text-xs text-slate-400 min-w-[90px]">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                        <Calendar className="w-3.5 h-3.5" />
                         {new Date(article.published_date).toLocaleDateString("ko-KR")}
                       </span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cordia-teal shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#0f2445] shrink-0" />
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="mt-12 pt-8 border-t flex gap-3 justify-center">
+          <div className="mt-12 pt-8 border-t border-slate-200 flex gap-3 justify-center">
             <Button
-              className="bg-cordia-dark hover:bg-gray-800 text-white px-8 py-6 text-base"
+              className="bg-[#0f2445] hover:bg-[#1a3a60] text-white px-8 py-3 text-sm font-semibold rounded-lg shadow-sm"
               onClick={() => navigate("/contact")}
               data-testid="button-apply-now"
             >

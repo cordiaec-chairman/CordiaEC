@@ -61,6 +61,14 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        cordia: {
+          navy: "#0f2445",
+          dark: "#0b1727",
+          teal: "#0d9488",
+          green: "#059669",
+          orange: "#e14a26",
+          blue: "#15559a",
+        },
       },
       keyframes: {
         "accordion-down": {

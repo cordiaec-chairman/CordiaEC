@@ -160,7 +160,7 @@ export default function AdminInitiativesTab() {
               <Button
                 type="button"
                 variant="outline"
-                className="border-cordia-teal/50 text-cordia-teal hover:bg-cordia-teal/5"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50"
                 onClick={handleTranslate}
                 disabled={translating}
               >
@@ -206,7 +206,7 @@ export default function AdminInitiativesTab() {
               취소
             </Button>
             <Button
-              className="bg-cordia-teal hover:bg-cordia-green text-white"
+              className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
             >

@@ -56,15 +56,18 @@ export default function News() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative py-20 bg-cordia-dark text-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">{t('news.heroTitle')}</h1>
-          <p className="text-lg text-white/80">{t('news.heroDesc')}</p>
+      <section className="relative py-12 sm:py-16 bg-cordia-dark text-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-cordia-teal mb-2">
+            News & Media
+          </p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">{t('news.heroTitle')}</h1>
+          <p className="text-sm sm:text-base text-white/80 max-w-2xl">{t('news.heroDesc')}</p>
         </div>
       </section>
 
       {/* Content Section */}
-      <section className="py-16 bg-white">
+      <section className="py-10 sm:py-14 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           {/* Search & Filter */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">

@@ -159,7 +159,7 @@ export default function AdminMilestonesTab() {
     <div>
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-bold text-cordia-dark">연혁 (About 페이지 하단)</h2>
-        <Button onClick={openCreate} className="bg-cordia-teal hover:bg-cordia-green text-white">
+        <Button onClick={openCreate} className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-medium">
           <Plus className="w-4 h-4 mr-2" />
           새 항목
         </Button>
@@ -266,7 +266,7 @@ export default function AdminMilestonesTab() {
               취소
             </Button>
             <Button
-              className="bg-cordia-teal hover:bg-cordia-green text-white"
+              className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || !form.periodLabel.trim() || !form.description.trim()}
             >

@@ -16,6 +16,9 @@ export default function AdminHomeSettingsTab() {
   const { toast } = useToast();
   const [boardTitle, setBoardTitle] = useState("Latest News");
   const [boardCount, setBoardCount] = useState("3");
+  const [snsYoutube, setSnsYoutube] = useState("");
+  const [snsInstagram, setSnsInstagram] = useState("");
+  const [snsX, setSnsX] = useState("");
 
   const { data: settings } = useQuery({
     queryKey: ["site_settings"],
@@ -31,6 +34,9 @@ export default function AdminHomeSettingsTab() {
     if (settings) {
       setBoardTitle(settings.home_board_title || "Latest News");
       setBoardCount(settings.home_board_count || "3");
+      setSnsYoutube(settings.sns_youtube || "");
+      setSnsInstagram(settings.sns_instagram || "");
+      setSnsX(settings.sns_x || "");
     }
   }, [settings]);
 
@@ -44,6 +50,9 @@ export default function AdminHomeSettingsTab() {
     mutationFn: async () => {
       await updateSiteSetting("home_board_title", boardTitle);
       await updateSiteSetting("home_board_count", boardCount);
+      await updateSiteSetting("sns_youtube", snsYoutube.trim());
+      await updateSiteSetting("sns_instagram", snsInstagram.trim());
+      await updateSiteSetting("sns_x", snsX.trim());
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
@@ -70,6 +79,54 @@ export default function AdminHomeSettingsTab() {
 
   return (
     <div className="space-y-6">
+      {/* SNS 연동 링크 설정 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>공식 SNS 연동 설정</CardTitle>
+          <p className="text-xs text-gray-500 font-normal">
+            웹사이트 상단 헤더 및 하단 푸터에 노출될 공식 SNS 채널 URL을 관리합니다. 비워둘 경우 해당 아이콘이 자동으로 숨겨집니다.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">YouTube 채널 URL</Label>
+              <Input
+                value={snsYoutube}
+                onChange={(e) => setSnsYoutube(e.target.value)}
+                placeholder="https://youtube.com/@..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">Instagram URL</Label>
+              <Input
+                value={snsInstagram}
+                onChange={(e) => setSnsInstagram(e.target.value)}
+                placeholder="https://instagram.com/..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">X (Twitter) URL</Label>
+              <Input
+                value={snsX}
+                onChange={(e) => setSnsX(e.target.value)}
+                placeholder="https://x.com/..."
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <Button
+            className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
+            onClick={() => settingsMutation.mutate()}
+            disabled={settingsMutation.isPending}
+          >
+            {settingsMutation.isPending ? "저장 중..." : "SNS 및 홈 설정 저장"}
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>홈 게시판 설정</CardTitle>
