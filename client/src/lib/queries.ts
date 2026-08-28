@@ -589,8 +589,41 @@ export async function deletePopup(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export interface GlossaryItem {
+  id: string;
+  ko: string;
+  en: string;
+}
+
+export const DEFAULT_GLOSSARY: GlossaryItem[] = [
+  { id: "1", ko: "K학술확산연구센터", en: "K-Academic Diffusion Research Center" },
+  { id: "2", ko: "국제관계연구소", en: "Inha Center for International Studies" },
+  { id: "3", ko: "이주및재외동포센터", en: "Center for Migration and Overseas Koreans" },
+  { id: "4", ko: "지구촌한인세상", en: "Cordia" },
+  { id: "5", ko: "디아스포라", en: "Diaspora" },
+  { id: "6", ko: "한국학", en: "Korean Studies" },
+  { id: "7", ko: "부설 연구원", en: "Affiliated Research Institute (KDec)" },
+];
+
+export async function getGlossary(): Promise<GlossaryItem[]> {
+  try {
+    const settings = await getSiteSettings();
+    if (settings.translation_glossary) {
+      const parsed = JSON.parse(settings.translation_glossary);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn("Failed to parse translation glossary:", e);
+  }
+  return DEFAULT_GLOSSARY;
+}
+
+export async function saveGlossary(items: GlossaryItem[]): Promise<void> {
+  await updateSiteSetting("translation_glossary", JSON.stringify(items));
+}
+
 // ============================================================
-// DeepL 번역 (관리자 전용 — 마크다운 이미지/태그 보호)
+// DeepL 번역 (관리자 전용 — 마크다운 이미지/태그 & 고정 용어사전 보호)
 // ============================================================
 export async function translateTexts(
   texts: string[],
@@ -599,8 +632,11 @@ export async function translateTexts(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("로그인이 필요합니다.");
 
-  // 마크다운 이미지 `![alt](url)` 및 링크 `[text](url)` 태그 보호
-  const placeholdersList: Array<{ token: string; original: string }[]> = [];
+  // 고정 용어사전 로드
+  const glossary = await getGlossary();
+
+  // 마크다운 이미지 `![alt](url)`, 링크 `[text](url)`, 및 용어사전 태그 보호
+  const placeholdersList: Array<{ token: string; replacement: string }[]> = [];
 
   const maskedTexts = texts.map((text, idx) => {
     if (!text || !text.trim()) {
@@ -608,22 +644,55 @@ export async function translateTexts(
       return text;
     }
 
-    const placeholders: { token: string; original: string }[] = [];
+    const placeholders: { token: string; replacement: string }[] = [];
     let counter = 0;
 
     // 1. 이미지 마크다운 보호: ![alt](url)
     let processed = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match) => {
       const token = `__IMG_TAG_${counter++}__`;
-      placeholders.push({ token, original: match });
+      placeholders.push({ token, replacement: match });
       return token;
     });
 
     // 2. 링크 URL 주소 보호: [text](https://...)
     processed = processed.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, (match, linkText, url) => {
       const token = `__LINK_URL_${counter++}__`;
-      placeholders.push({ token, original: `](${url})` });
+      placeholders.push({ token, replacement: `](${url})` });
       return `[${linkText}${token}`;
     });
+
+    // 3. 고정 용어 사전(Glossary) 치환
+    if (glossary && glossary.length > 0) {
+      if (targetLang === "EN-US") {
+        // 국문 -> 영문 번역 시: 국문 단어를 토큰으로 치환 후, 번역 결과에 지정된 영문 단어 주입
+        const sortedKo = [...glossary]
+          .filter((g) => g.ko && g.ko.trim() && g.en && g.en.trim())
+          .sort((a, b) => b.ko.length - a.ko.length);
+
+        sortedKo.forEach((item) => {
+          if (processed.includes(item.ko)) {
+            const token = `__GLOSSARY_${counter++}__`;
+            placeholders.push({ token, replacement: item.en });
+            processed = processed.split(item.ko).join(token);
+          }
+        });
+      } else {
+        // 영문 -> 국문 번역 시: 영문 단어를 대소문자 무시 검색하여 토큰으로 치환 후 지정된 국문 단어 주입
+        const sortedEn = [...glossary]
+          .filter((g) => g.ko && g.ko.trim() && g.en && g.en.trim())
+          .sort((a, b) => b.en.length - a.en.length);
+
+        sortedEn.forEach((item) => {
+          const escaped = item.en.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const regex = new RegExp(escaped, "gi");
+          if (regex.test(processed)) {
+            const token = `__GLOSSARY_${counter++}__`;
+            placeholders.push({ token, replacement: item.ko });
+            processed = processed.replace(regex, token);
+          }
+        });
+      }
+    }
 
     placeholdersList[idx] = placeholders;
     return processed;
@@ -654,12 +723,12 @@ export async function translateTexts(
   const data = await res.json();
   const rawTranslations: string[] = data.translations;
 
-  // 번역된 텍스트에서 플레이스홀더 복원
+  // 번역된 텍스트에서 플레이스홀더 복원 (용어사전 매핑 및 이미지/링크 복구)
   return rawTranslations.map((trans, idx) => {
     let unmasked = trans;
     const placeholders = placeholdersList[idx] || [];
-    placeholders.forEach(({ token, original }) => {
-      unmasked = unmasked.split(token).join(original);
+    placeholders.forEach(({ token, replacement }) => {
+      unmasked = unmasked.split(token).join(replacement);
     });
     return unmasked;
   });
