@@ -13,15 +13,25 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Pencil } from "lucide-react";
+import { Pencil, Languages, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getInitiatives, updateInitiative, translateTexts } from "@/lib/queries";
-import { Languages } from "lucide-react";
+import { getInitiatives, updateInitiative, syncDefaultInitiatives, translateTexts } from "@/lib/queries";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Initiative } from "@/lib/database.types";
 
 export default function AdminInitiativesTab() {
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
+  const [syncConfirmOpen, setSyncConfirmOpen] = useState(false);
   const [editing, setEditing] = useState<Initiative | null>(null);
 
   const [form, setForm] = useState({
@@ -110,12 +120,68 @@ export default function AdminInitiativesTab() {
     },
   });
 
+  const syncMutation = useMutation({
+    mutationFn: syncDefaultInitiatives,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["initiatives"] });
+      setSyncConfirmOpen(false);
+      toast({
+        title: "동기화 완료",
+        description: "최신 6대 공식 이니셔티브가 운영 DB에 성공적으로 등록되었습니다.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "동기화 실패",
+        description: err.message || "DB 갱신 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-cordia-dark mb-4">이니셔티브 관리</h2>
-        <p className="text-sm text-gray-500">6개 이니셔티브의 정보를 수정할 수 있습니다 (추가/삭제 불가)</p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-cordia-dark mb-1">이니셔티브 관리</h2>
+          <p className="text-sm text-gray-500">6개 공식 이니셔티브의 정보(국문/영문, 설명, 이미지)를 수정할 수 있습니다.</p>
+        </div>
+        <Button
+          variant="outline"
+          className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs sm:text-sm self-start sm:self-auto shrink-0 shadow-sm"
+          onClick={() => setSyncConfirmOpen(true)}
+          disabled={syncMutation.isPending}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? "animate-spin text-cordia-teal" : ""}`} />
+          {syncMutation.isPending ? "동기화 진행 중..." : "최신 6대 공식 데이터로 DB 동기화"}
+        </Button>
       </div>
+
+      <AlertDialog open={syncConfirmOpen} onOpenChange={setSyncConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>최신 6대 공식 이니셔티브 DB 동기화</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-slate-600 text-sm">
+              <p>
+                운영 데이터베이스에 등록된 기존 이니셔티브 데이터를 <strong>최신 6대 공식 표준 이니셔티브</strong>(재외한인 연구 및 정책 자문, 글로벌 무역 및 유통 지원, 한인 문화 아카이빙 및 교류, 차세대 인재 양성 및 리더십, 미디어 콘텐츠 기획 및 제작, 지구촌 한인 상생 및 권익 증진)로 일괄 갱신합니다.
+              </p>
+              <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">
+                ⚠️ 기존 구형 모의 데이터(K-Food, K-Beauty 등)는 삭제되며, 공식 국문/영문 번역본이 DB에 즉시 등록됩니다.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={syncMutation.isPending}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+            >
+              {syncMutation.isPending ? "동기화 중..." : "지금 동기화 실행"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {initiatives.map((init) => (
