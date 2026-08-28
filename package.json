@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "check": "tsc"
+    "check": "tsc",
+    "db:sync-initiatives": "node scripts/sync-initiatives.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
