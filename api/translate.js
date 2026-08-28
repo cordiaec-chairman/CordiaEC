@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     : "https://api-free.deepl.com/v2/translate";
 
   const target = targetLang === "KO" ? "KO" : "EN-US";
-  const payload: Record<string, unknown> = {
+  const payload = {
     text: texts.map((t) => String(t).slice(0, 20000)),
     target_lang: target,
   };
