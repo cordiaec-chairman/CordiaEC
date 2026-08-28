@@ -299,22 +299,32 @@ export default function AdminPostsTab() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const finalTitleKo = form.titleKo.trim() || null;
+      const finalContentKo = form.contentKo.trim() || null;
+      const finalExcerptKo = form.excerptKo.trim() || (finalContentKo ? finalContentKo.slice(0, 150) : null);
+
+      const finalTitle = form.title.trim() || finalTitleKo || "";
+      const finalContent = form.content.trim() || finalContentKo || "";
+      const finalExcerpt = form.excerpt.trim() || finalExcerptKo || (finalContent ? finalContent.slice(0, 150) : "");
+
+      const payload: Record<string, any> = {
         board: form.board,
-        title: form.title,
-        excerpt: form.excerpt,
-        content: form.content,
-        title_ko: form.titleKo || null,
-        excerpt_ko: form.excerptKo || null,
-        content_ko: form.contentKo || null,
+        title: finalTitle,
+        excerpt: finalExcerpt,
+        content: finalContent,
+        title_ko: finalTitleKo,
+        excerpt_ko: finalExcerptKo,
+        content_ko: finalContentKo,
         image_url: form.imageUrl || null,
-        file_url: form.fileUrl || null,
-        file_name: form.fileName || null,
         link_url: form.linkUrl || null,
         initiative_slug: form.board === "news" && form.initiativeSlug ? form.initiativeSlug : null,
         is_pinned_home: editing ? editing.is_pinned_home : false,
         published_date: new Date(form.publishedDate).toISOString(),
       };
+
+      // 파일이 첨부된 경우에만 컬럼 전송 (PostgREST schema cache 400 에러 방지)
+      if (form.fileUrl) payload.file_url = form.fileUrl;
+      if (form.fileName) payload.file_name = form.fileName;
 
       if (editing) {
         await updatePost(editing.id, payload);
@@ -1039,7 +1049,12 @@ export default function AdminPostsTab() {
               <Button
                 className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-semibold rounded-lg text-xs h-9 px-5 shadow-sm"
                 onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending || !form.title || !form.excerpt || !form.content || !form.publishedDate}
+                disabled={
+                  saveMutation.isPending ||
+                  (!form.title.trim() && !form.titleKo.trim()) ||
+                  (!form.content.trim() && !form.contentKo.trim()) ||
+                  !form.publishedDate
+                }
               >
                 {saveMutation.isPending ? "저장 중..." : editing ? "수정사항 저장" : "게시글 발행"}
               </Button>

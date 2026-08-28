@@ -44,15 +44,6 @@ export default function AdminLoginForm() {
     }
   };
 
-  const handleTestLogin = () => {
-    localStorage.setItem("test_admin_auth", "true");
-    toast({
-      title: "테스트 모드 접속 성공",
-      description: "로컬 테스트 관리자 패널로 이동합니다.",
-    });
-    window.location.reload();
-  };
-
   return (
     <Layout>
       <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 py-10">
@@ -71,26 +62,6 @@ export default function AdminLoginForm() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Quick Test Login Button */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
-              <p className="text-xs font-medium text-slate-700 mb-2">
-                로컬 개발 및 UI 테스트 모드입니다.
-              </p>
-              <Button
-                type="button"
-                onClick={handleTestLogin}
-                className="w-full bg-[#0f2445] hover:bg-[#15559a] text-white font-bold text-sm shadow-sm"
-              >
-                ⚡ 테스트 계정으로 바로 들어가기
-              </Button>
-            </div>
-
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-gray-200"></div>
-              <span className="flex-shrink mx-3 text-xs text-gray-400">또는 Supabase 계정으로 로그인</span>
-              <div className="flex-grow border-t border-gray-200"></div>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">

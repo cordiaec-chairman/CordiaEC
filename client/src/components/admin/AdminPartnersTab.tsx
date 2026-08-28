@@ -100,11 +100,18 @@ export default function AdminPartnersTab() {
     }
   };
 
+  function generateTextLogo(name: string): string {
+    const clean = (name || "Partner").trim().slice(0, 12);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><text x="100" y="36" font-size="15" font-family="sans-serif" font-weight="bold" fill="#0f2445" text-anchor="middle">${clean}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const finalLogoUrl = form.logoUrl.trim() || generateTextLogo(form.name);
       const payload = {
         name: form.name.trim(),
-        logo_url: form.logoUrl,
+        logo_url: finalLogoUrl,
         link_url: form.linkUrl.trim() || null,
         display_order: Number(form.displayOrder) || 1,
         is_active: form.isActive,
@@ -122,9 +129,12 @@ export default function AdminPartnersTab() {
       toast({ title: editing ? "수정 완료" : "등록 완료" });
     },
     onError: (err: any) => {
+      const isMissingTable = err.message?.includes("partners") && (err.message?.includes("does not exist") || err.message?.includes("42P01"));
       toast({
-        title: "오류",
-        description: err.message,
+        title: isMissingTable ? "데이터베이스 테이블 누락" : "오류",
+        description: isMissingTable
+          ? "Supabase에 partners 테이블이 생성되지 않았습니다. 안내된 SQL 스크립트를 Supabase SQL Editor에서 1회 실행해주세요."
+          : err.message,
         variant: "destructive",
       });
     },
@@ -278,10 +288,10 @@ export default function AdminPartnersTab() {
             </div>
 
             <div>
-              <Label>로고 이미지 *</Label>
+              <Label>로고 이미지 (선택)</Label>
               {form.logoUrl ? (
                 <div className="relative inline-block mt-1 p-2 bg-gray-50 border rounded-lg">
-                  <img src={form.logoUrl} alt="Logo preview" className="h-16 w-auto object-contain" />
+                  <img src={form.logoUrl} alt="Logo preview" className="h-16 w-auto object-contain max-w-[200px]" />
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, logoUrl: "" })}
@@ -291,18 +301,29 @@ export default function AdminPartnersTab() {
                   </button>
                 </div>
               ) : (
-                <label className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-1 hover:border-cordia-teal hover:bg-cordia-teal/5 transition-colors cursor-pointer mt-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                    disabled={uploadingLogo}
+                <div className="space-y-2 mt-1">
+                  <label className="w-full h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-1 hover:border-cordia-teal hover:bg-cordia-teal/5 transition-colors cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                      disabled={uploadingLogo}
+                    />
+                    <span className="text-xs text-gray-500">
+                      {uploadingLogo ? "업로드 중..." : "클릭하여 로고 이미지 파일 업로드 (PNG/JPG/WebP/SVG)"}
+                    </span>
+                  </label>
+                  <Input
+                    value={form.logoUrl}
+                    onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+                    placeholder="또는 로고 이미지 외부 웹 URL 직접 입력"
+                    className="text-xs"
                   />
-                  <span className="text-xs text-gray-500">
-                    {uploadingLogo ? "업로드 중..." : "클릭하여 협력사 로고 업로드 (투명 PNG / JPG 권장)"}
-                  </span>
-                </label>
+                  <p className="text-[11px] text-gray-400">
+                    💡 로고를 등록하지 않을 경우 파트너명을 기반으로 한 깔끔한 텍스트 배지가 기본 자동 적용됩니다.
+                  </p>
+                </div>
               )}
             </div>
 
@@ -343,7 +364,7 @@ export default function AdminPartnersTab() {
             <Button
               className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
               onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending || !form.name.trim() || !form.logoUrl}
+              disabled={saveMutation.isPending || !form.name.trim()}
             >
               {saveMutation.isPending ? "저장 중..." : "저장"}
             </Button>

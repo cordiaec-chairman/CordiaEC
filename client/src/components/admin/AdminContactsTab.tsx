@@ -125,6 +125,17 @@ export default function AdminContactsTab() {
                   <p className="text-gray-700 whitespace-pre-wrap">{viewingContact.message}</p>
                 </div>
               </div>
+              <div className="pt-2 flex justify-end gap-2">
+                <Button
+                  asChild
+                  className="bg-cordia-teal hover:bg-cordia-teal/90 text-white"
+                >
+                  <a href={`mailto:${viewingContact.email}?subject=Re:%20[CordiaEC]%20문의에%20대한%20답변드립니다`}>
+                    <Mail className="w-4 h-4 mr-2" />
+                    이메일로 바로 답장하기
+                  </a>
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

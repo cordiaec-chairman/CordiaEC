@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
-import { getActiveHeroSlides, getSiteSettings, DEFAULT_HERO_SLIDES, DEFAULT_SITE_SETTINGS } from "@/lib/queries";
+import { getActiveHeroSlides, getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/queries";
 import { useLang, pickField } from "@/lib/i18n";
 
 export default function HeroCarousel() {
@@ -9,7 +9,7 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const { data: slides = DEFAULT_HERO_SLIDES } = useQuery({
+  const { data: slides = [] } = useQuery({
     queryKey: ["hero_slides"],
     queryFn: getActiveHeroSlides,
   });

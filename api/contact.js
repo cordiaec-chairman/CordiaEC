@@ -36,19 +36,23 @@ export default async function handler(req, res) {
   const cleanMessage = message.trim().slice(0, 5000);
   const nowStr = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  // Service Role Key가 설정되어 있으면 RLS 정책 우회하여 무조건 저장 보장, 없을 시 Anon Key 사용
+  const dbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+  let dbSaved = false;
+  let dbError = null;
 
   // 3) Supabase DB contacts 테이블에 저장
-  if (supabaseUrl && anonKey) {
+  if (supabaseUrl && dbKey) {
     try {
       const dbRes = await fetch(`${supabaseUrl}/rest/v1/contacts`, {
         method: "POST",
         headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          apikey: dbKey,
+          Authorization: `Bearer ${dbKey}`,
           "Content-Type": "application/json",
-          Prefer: "return=representation",
+          Prefer: "return=minimal",
         },
         body: JSON.stringify({
           name: cleanName,
@@ -57,19 +61,28 @@ export default async function handler(req, res) {
         }),
       });
 
-      if (!dbRes.ok) {
+      if (dbRes.ok) {
+        dbSaved = true;
+      } else {
         const errText = await dbRes.text();
-        console.error("Supabase insert error:", errText);
+        dbError = errText;
+        console.error("Supabase contacts insert error:", errText);
       }
     } catch (dbErr) {
+      dbError = dbErr.message;
       console.error("DB connection error:", dbErr);
     }
+  } else {
+    dbError = "Missing Supabase configuration";
   }
 
   // 4) Resend API를 통한 cordiaec@gmail.com 메일 발송
   const resendApiKey = process.env.RESEND_API_KEY;
   const toEmail = process.env.CONTACT_RECEIVER_EMAIL || "cordiaec@gmail.com";
   const fromEmail = process.env.RESEND_FROM_EMAIL || "CordiaEC Web <onboarding@resend.dev>";
+
+  let emailSent = false;
+  let emailError = null;
 
   if (resendApiKey) {
     try {
@@ -99,7 +112,7 @@ export default async function handler(req, res) {
           </div>
 
           <div style="background: #f9fafb; padding: 16px 28px; text-align: center; border-top: 1px solid #e5e7eb;">
-            <p style="font-size: 12px; color: #9ca3af; margin: 0;">본 메일은 CordiaEC 웹사이트(cordiaec.com) 문의 폼을 통해 자동 발송되었습니다.</p>
+            <p style="font-size: 12px; color: #9ca3af; margin: 0;">본 메일은 CordiaEC 웹사이트 문의 폼을 통해 자동 발송되었습니다.</p>
           </div>
         </div>
       `;
@@ -119,16 +132,33 @@ export default async function handler(req, res) {
         }),
       });
 
-      if (!mailRes.ok) {
-        const mailErr = await mailRes.text();
-        console.error("Resend API error:", mailErr);
+      if (mailRes.ok) {
+        emailSent = true;
+      } else {
+        emailError = await mailRes.text();
+        console.error("Resend API error:", emailError);
       }
     } catch (err) {
+      emailError = err.message;
       console.error("Email sending error:", err);
     }
   } else {
-    console.log("RESEND_API_KEY is not configured. Inquiry saved to DB only.");
+    console.log("RESEND_API_KEY is not configured in environment variables.");
   }
 
-  res.status(200).json({ success: true, message: "문의가 성공적으로 접수되었습니다." });
+  // DB 저장이 성공했거나 이메일이 발송된 경우 성공 반환
+  if (dbSaved || emailSent) {
+    res.status(200).json({
+      success: true,
+      dbSaved,
+      emailSent,
+      message: "문의가 성공적으로 접수되었습니다.",
+    });
+  } else {
+    // DB 저장과 이메일 발송 둘 다 실패한 경우
+    res.status(500).json({
+      error: "문의 접수 처리 중 오류가 발생했습니다.",
+      details: { dbError, emailError },
+    });
+  }
 }

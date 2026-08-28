@@ -82,19 +82,20 @@ export default function AdminMilestonesTab() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const finalDesc = form.description.trim() || form.descriptionKo.trim();
       if (editing) {
         await updateMilestone(editing.id, {
-          period_label: form.periodLabel,
-          title: form.periodLabel,
-          description: form.description,
-          description_ko: form.descriptionKo || null,
+          period_label: form.periodLabel.trim(),
+          title: form.periodLabel.trim(),
+          description: finalDesc,
+          description_ko: form.descriptionKo.trim() || null,
         });
       } else {
         await createMilestone({
-          period_label: form.periodLabel,
-          title: form.periodLabel,
-          description: form.description,
-          description_ko: form.descriptionKo || null,
+          period_label: form.periodLabel.trim(),
+          title: form.periodLabel.trim(),
+          description: finalDesc,
+          description_ko: form.descriptionKo.trim() || null,
           image_url: null,
           display_order: milestones.length + 1,
         });
@@ -268,7 +269,11 @@ export default function AdminMilestonesTab() {
             <Button
               className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
               onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending || !form.periodLabel.trim() || !form.description.trim()}
+              disabled={
+                saveMutation.isPending ||
+                !form.periodLabel.trim() ||
+                (!form.description.trim() && !form.descriptionKo.trim())
+              }
             >
               {saveMutation.isPending ? "저장 중..." : "저장"}
             </Button>

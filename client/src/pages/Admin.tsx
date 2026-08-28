@@ -33,8 +33,13 @@ export default function Admin() {
   const [active, setActive] = useState<MenuId>("posts");
 
   const handleLogout = async () => {
-    localStorage.removeItem("test_admin_auth");
-    await supabase.auth.signOut();
+    try {
+      sessionStorage.clear();
+      localStorage.removeItem("test_admin_auth");
+      await supabase.auth.signOut();
+    } catch (e) {
+      // Ignore errors
+    }
     navigate("/");
   };
 

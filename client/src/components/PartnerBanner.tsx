@@ -35,13 +35,13 @@ export default function PartnerBanner() {
             const content = (
               <div
                 key={`${partner.id}-${idx}`}
-                className="flex items-center justify-center h-14 sm:h-16 px-6 bg-white rounded-xl border border-gray-100/80 shadow-xs hover:shadow-md hover:border-cordia-teal/40 transition-all duration-300 group shrink-0 cursor-pointer"
+                className="flex items-center justify-center h-16 sm:h-18 px-6 bg-white rounded-xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-cordia-teal/50 transition-all duration-300 group shrink-0 cursor-pointer"
                 title={partner.name}
               >
                 <img
                   src={partner.logo_url}
                   alt={partner.name}
-                  className="max-h-8 sm:max-h-10 max-w-[140px] sm:max-w-[160px] object-contain filter grayscale opacity-75 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+                  className="max-h-9 sm:max-h-11 max-w-[150px] sm:max-w-[180px] object-contain transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
               </div>

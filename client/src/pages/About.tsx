@@ -11,7 +11,7 @@ export default function About() {
   const { lang } = useLang();
   const t = useT();
 
-  const { data: milestones = [] } = useQuery({
+  const { data: milestones = [], isLoading } = useQuery({
     queryKey: ["milestones"],
     queryFn: getMilestones,
   });
@@ -182,37 +182,61 @@ export default function About() {
             {/* Center-left Connecting Line */}
             <div className="absolute left-6 sm:left-36 top-3 bottom-3 w-0.5 bg-slate-200" />
 
-            <div className="space-y-6">
-              {milestones.map((milestone: Milestone, idx: number) => {
-                const desc = pickField(milestone, "description", lang);
-                return (
+            {isLoading ? (
+              <div className="space-y-6">
+                {[...Array(4)].map((_, idx) => (
                   <div
-                    key={milestone.id || idx}
-                    className="relative flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-8 group"
-                    data-testid={`row-milestone-${idx}`}
+                    key={idx}
+                    className="relative flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-8 animate-pulse"
                   >
-                    {/* Left: Date Badge */}
                     <div className="flex items-center gap-3 sm:w-32 sm:justify-end shrink-0 pl-12 sm:pl-0">
-                      <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-bold text-[#0f2445] shadow-2xs group-hover:border-teal-500 group-hover:text-teal-700 transition-colors">
-                        {milestone.period_label}
-                      </div>
+                      <div className="h-8 w-24 bg-slate-200 rounded-xl" />
                     </div>
-
-                    {/* Center: Timeline Dot */}
-                    <div className="absolute left-6 sm:left-36 -translate-x-1/2 top-2 sm:top-2.5 w-3 h-3 rounded-full bg-white border-2 border-teal-600 shadow-xs group-hover:bg-teal-600 transition-colors" />
-
-                    {/* Right: Content Card */}
-                    <div className="flex-1 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-slate-300 transition-all ml-12 sm:ml-0">
-                      <div className="text-slate-800 text-sm sm:text-base leading-relaxed font-medium">
-                        {desc.split("\n").map((line, i) =>
-                          line.trim() ? <p key={i} className="mb-1 last:mb-0">{line.trim()}</p> : null
-                        )}
-                      </div>
+                    <div className="absolute left-6 sm:left-36 -translate-x-1/2 top-2 sm:top-2.5 w-3 h-3 rounded-full bg-slate-300" />
+                    <div className="flex-1 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs ml-12 sm:ml-0">
+                      <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-slate-100 rounded w-1/2" />
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : milestones.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <p>등록된 공식 연혁 정보가 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {milestones.map((milestone: Milestone, idx: number) => {
+                  const desc = pickField(milestone, "description", lang);
+                  return (
+                    <div
+                      key={milestone.id || idx}
+                      className="relative flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-8 group"
+                      data-testid={`row-milestone-${idx}`}
+                    >
+                      {/* Left: Date Badge */}
+                      <div className="flex items-center gap-3 sm:w-32 sm:justify-end shrink-0 pl-12 sm:pl-0">
+                        <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-bold text-[#0f2445] shadow-2xs group-hover:border-teal-500 group-hover:text-teal-700 transition-colors">
+                          {milestone.period_label}
+                        </div>
+                      </div>
+
+                      {/* Center: Timeline Dot */}
+                      <div className="absolute left-6 sm:left-36 -translate-x-1/2 top-2 sm:top-2.5 w-3 h-3 rounded-full bg-white border-2 border-teal-600 shadow-xs group-hover:bg-teal-600 transition-colors" />
+
+                      {/* Right: Content Card */}
+                      <div className="flex-1 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-slate-300 transition-all ml-12 sm:ml-0">
+                        <div className="text-slate-800 text-sm sm:text-base leading-relaxed font-medium">
+                          {desc.split("\n").map((line, i) =>
+                            line.trim() ? <p key={i} className="mb-1 last:mb-0">{line.trim()}</p> : null
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Bottom CTA Button */}

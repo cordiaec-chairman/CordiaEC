@@ -62,26 +62,41 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   );
 
-  const SnsLinks = ({ light = false }: { light?: boolean }) => {
-    const youtube = settings?.sns_youtube || "https://www.youtube.com";
-    const instagram = settings?.sns_instagram || "https://www.instagram.com";
-    const xLink = settings?.sns_x || "https://x.com";
+  const SnsLinks = ({
+    size = "md",
+    direction = "row",
+  }: {
+    size?: "sm" | "md" | "lg";
+    direction?: "row" | "col";
+  }) => {
+    const youtube = settings?.sns_youtube || "https://www.youtube.com/@inhak-academy2859";
+    const instagram = settings?.sns_instagram || "https://www.instagram.com/cordiaec/";
+    const xLink = settings?.sns_x || "https://x.com/Cordia_EC";
 
-    const baseClass = light
-      ? "text-slate-300 hover:text-white transition-colors"
-      : "text-slate-500 hover:text-[#0f2445] transition-colors";
+    const badgeSizes = {
+      sm: "w-8 h-8",
+      md: "w-9 h-9 sm:w-10 sm:h-10",
+      lg: "w-11 h-11",
+    }[size];
+
+    const iconSizes = {
+      sm: "w-4 h-4",
+      md: "w-5 h-5",
+      lg: "w-6 h-6",
+    }[size];
 
     return (
-      <div className="flex items-center gap-3">
+      <div className={`flex ${direction === "col" ? "flex-col items-center gap-2" : "items-center gap-2.5 sm:gap-3 flex-wrap"}`}>
         {youtube && (
           <a
             href={youtube}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${baseClass} hover:text-red-500`}
+            className={`group inline-flex items-center justify-center ${badgeSizes} rounded-full bg-[#FF0000] text-white shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/40 hover:scale-110 active:scale-95 transition-all duration-200`}
             title="YouTube"
+            aria-label="CordiaEC YouTube"
           >
-            <Youtube className="w-4 h-4" />
+            <Youtube className={iconSizes} />
           </a>
         )}
         {instagram && (
@@ -89,10 +104,11 @@ export default function Layout({ children }: LayoutProps) {
             href={instagram}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${baseClass} hover:text-pink-500`}
+            className={`group inline-flex items-center justify-center ${badgeSizes} rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white shadow-md shadow-pink-500/25 hover:shadow-lg hover:shadow-pink-500/40 hover:scale-110 active:scale-95 transition-all duration-200`}
             title="Instagram"
+            aria-label="CordiaEC Instagram"
           >
-            <Instagram className="w-4 h-4" />
+            <Instagram className={iconSizes} />
           </a>
         )}
         {xLink && (
@@ -100,10 +116,11 @@ export default function Layout({ children }: LayoutProps) {
             href={xLink}
             target="_blank"
             rel="noopener noreferrer"
-            className={baseClass}
-            title="X"
+            className={`group inline-flex items-center justify-center ${badgeSizes} rounded-full bg-[#0a0f18] hover:bg-black text-white shadow-md shadow-slate-900/30 hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-200 border border-slate-700/60`}
+            title="X (구 Twitter)"
+            aria-label="CordiaEC X"
           >
-            <XIcon className="w-3.5 h-3.5" />
+            <XIcon className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} />
           </a>
         )}
       </div>
@@ -229,14 +246,33 @@ export default function Layout({ children }: LayoutProps) {
               <Link href="/news"><span className={`block text-sm cursor-pointer py-1.5 ${isActive("/news") ? "text-[#0f2445] font-bold" : "text-slate-600 hover:text-[#0f2445] font-medium"}`} onClick={() => setMobileMenuOpen(false)}>{t("nav.news")}</span></Link>
               <Link href="/contact"><span className={`block text-sm cursor-pointer py-1.5 ${isActive("/contact") ? "text-[#0f2445] font-bold" : "text-slate-600 hover:text-[#0f2445] font-medium"}`} onClick={() => setMobileMenuOpen(false)}>{t("nav.contact")}</span></Link>
               
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-400 font-medium">Follow Us</span>
-                <SnsLinks />
+              {/* 모바일 메뉴 하단 SNS 채널 박스 */}
+              <div className="pt-3.5 mt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between p-3 bg-slate-50/90 rounded-2xl border border-slate-200/70">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Official Channels</span>
+                    <span className="text-xs text-[#0f2445] font-semibold">공식 SNS 바로가기</span>
+                  </div>
+                  <SnsLinks size="sm" />
+                </div>
               </div>
             </div>
           </div>
         )}
       </header>
+
+      {/* 우측 화면 고정 플로팅 SNS 빠른 링크 바 (Desktop) */}
+      <aside
+        aria-label="Social Media Quick Links"
+        className="fixed right-3.5 sm:right-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-2 z-40 bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all"
+      >
+        <div className="text-[10px] font-bold text-slate-400 text-center tracking-tighter pb-0.5 border-b border-slate-100">
+          SNS
+        </div>
+        <div className="py-0.5">
+          <SnsLinks size="sm" direction="col" />
+        </div>
+      </aside>
 
       <main className="pt-16">{children}</main>
 
@@ -249,7 +285,12 @@ export default function Layout({ children }: LayoutProps) {
                 <img src={logoText} alt="CordiaEC" className="h-6 w-auto brightness-0 invert object-contain shrink-0" style={{ height: "24px", maxHeight: "24px", width: "auto" }} />
               </div>
               <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed max-w-sm">{t("footer.tagline")}</p>
-              <SnsLinks light />
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                  Official Channels
+                </p>
+                <SnsLinks size="md" />
+              </div>
             </div>
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider mb-3 text-slate-200">{t("footer.quickLinks")}</h3>

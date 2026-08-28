@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
-import { getInitiatives, DEFAULT_INITIATIVES } from "@/lib/queries";
+import { getInitiatives } from "@/lib/queries";
 import type { Initiative } from "@/lib/database.types";
 import { useLang, useT, pickField } from "@/lib/i18n";
 
@@ -15,7 +15,7 @@ export default function Initiatives() {
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  const { data: initiatives = DEFAULT_INITIATIVES } = useQuery({
+  const { data: initiatives = [] } = useQuery({
     queryKey: ["initiatives"],
     queryFn: getInitiatives,
   });

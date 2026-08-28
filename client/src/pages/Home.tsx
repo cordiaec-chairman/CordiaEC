@@ -6,7 +6,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import PopupDisplay from "@/components/PopupDisplay";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, FileText, FileDown, Lightbulb, Users, Handshake } from "lucide-react";
-import { getInitiatives, getHomePosts, getHomeReports, getSiteSettings, DEFAULT_INITIATIVES, DEFAULT_POSTS, DEFAULT_SITE_SETTINGS } from "@/lib/queries";
+import { getInitiatives, getHomePosts, getHomeReports, getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/queries";
 import { useLang, useT, pickField } from "@/lib/i18n";
 import type { Initiative, Post } from "@/lib/database.types";
 import NewsModal from "@/components/modals/NewsModal";
@@ -19,7 +19,7 @@ export default function Home() {
   const [selectedNews, setSelectedNews] = useState<Post | null>(null);
   const [newsModalOpen, setNewsModalOpen] = useState(false);
 
-  const { data: initiatives = DEFAULT_INITIATIVES } = useQuery({
+  const { data: initiatives = [] } = useQuery({
     queryKey: ["initiatives"],
     queryFn: getInitiatives,
   });
@@ -31,15 +31,12 @@ export default function Home() {
 
   const homeCount = parseInt(settings.home_board_count || "3", 10);
 
-  const defaultNews = DEFAULT_POSTS.filter((p) => p.board === "news").slice(0, homeCount);
-  const defaultReports = DEFAULT_POSTS.filter((p) => p.board === "reports").slice(0, 3);
-
-  const { data: newsArticles = defaultNews } = useQuery({
+  const { data: newsArticles = [], isLoading: isNewsLoading } = useQuery({
     queryKey: ["home_posts", homeCount],
     queryFn: () => getHomePosts(homeCount),
   });
 
-  const { data: reports = defaultReports } = useQuery({
+  const { data: reports = [], isLoading: isReportsLoading } = useQuery({
     queryKey: ["home_reports", 3],
     queryFn: () => getHomeReports(3),
   });
@@ -227,7 +224,20 @@ export default function Home() {
                   </Link>
                 </div>
 
-                {newsArticles.length === 0 ? (
+                {isNewsLoading ? (
+                  <div className="space-y-3.5">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="flex gap-4 bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 animate-pulse">
+                        <div className="w-24 h-20 sm:w-28 sm:h-22 rounded-lg bg-slate-100 shrink-0" />
+                        <div className="flex-1 space-y-2 py-1">
+                          <div className="h-4 bg-slate-200 rounded w-3/4" />
+                          <div className="h-3 bg-slate-100 rounded w-full" />
+                          <div className="h-2.5 bg-slate-100 rounded w-1/4 mt-2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : newsArticles.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50 rounded-xl text-slate-400 text-xs sm:text-sm">
                     {t("home.noNews")}
                   </div>
@@ -292,7 +302,20 @@ export default function Home() {
                   </Link>
                 </div>
 
-                {reports.length === 0 ? (
+                {isReportsLoading ? (
+                  <div className="space-y-3.5">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="flex gap-4 bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 animate-pulse">
+                        <div className="w-24 h-20 sm:w-28 sm:h-22 rounded-lg bg-slate-100 shrink-0" />
+                        <div className="flex-1 space-y-2 py-1">
+                          <div className="h-4 bg-slate-200 rounded w-3/4" />
+                          <div className="h-3 bg-slate-100 rounded w-full" />
+                          <div className="h-2.5 bg-slate-100 rounded w-1/4 mt-2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : reports.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50 rounded-xl text-slate-400 text-xs sm:text-sm">
                     {t("home.noReports")}
                   </div>

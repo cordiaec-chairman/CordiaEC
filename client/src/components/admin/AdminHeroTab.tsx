@@ -36,7 +36,6 @@ import {
   getSiteSettings,
   updateSiteSetting,
   translateTexts,
-  DEFAULT_HERO_SLIDES,
 } from "@/lib/queries";
 import { Languages } from "lucide-react";
 import type { HeroSlide } from "@/lib/database.types";
@@ -73,7 +72,7 @@ export default function AdminHeroTab() {
 
   const [form, setForm] = useState({ imageUrl: "", headline: "", subLines: "", headlineKo: "", subLinesKo: "" });
 
-  const { data: slides = DEFAULT_HERO_SLIDES } = useQuery({
+  const { data: slides = [] } = useQuery({
     queryKey: ["admin_hero_slides"],
     queryFn: getAllHeroSlides,
   });
@@ -120,21 +119,24 @@ export default function AdminHeroTab() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const finalHeadline = form.headline.trim() || form.headlineKo.trim();
+      const finalSubLines = form.subLines.trim() || form.subLinesKo.trim();
+
       if (editing) {
         await updateHeroSlide(editing.id, {
           image_url: form.imageUrl,
-          headline: form.headline,
-          sub_lines: form.subLines,
-          headline_ko: form.headlineKo || null,
-          sub_lines_ko: form.subLinesKo || null,
+          headline: finalHeadline,
+          sub_lines: finalSubLines,
+          headline_ko: form.headlineKo.trim() || null,
+          sub_lines_ko: form.subLinesKo.trim() || null,
         });
       } else {
         await createHeroSlide({
           image_url: form.imageUrl,
-          headline: form.headline,
-          sub_lines: form.subLines,
-          headline_ko: form.headlineKo || null,
-          sub_lines_ko: form.subLinesKo || null,
+          headline: finalHeadline,
+          sub_lines: finalSubLines,
+          headline_ko: form.headlineKo.trim() || null,
+          sub_lines_ko: form.subLinesKo.trim() || null,
           display_order: slides.length + 1,
           is_active: true,
         });
@@ -367,7 +369,11 @@ export default function AdminHeroTab() {
             <Button
               className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
               onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending || !form.imageUrl || !form.headline.trim()}
+              disabled={
+                saveMutation.isPending ||
+                !form.imageUrl ||
+                (!form.headline.trim() && !form.headlineKo.trim())
+              }
             >
               {saveMutation.isPending ? "저장 중..." : "저장"}
             </Button>
