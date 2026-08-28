@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { getActivePopups } from "@/lib/queries";
 import type { Popup, PopupPosition } from "@/lib/database.types";
+import { useLang } from "@/lib/i18n";
 
 const POSITION_CLASSES: Record<PopupPosition, string> = {
   center: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
@@ -17,6 +18,7 @@ function todayKey(id: string) {
 }
 
 function PopupCard({ popup, onClose }: { popup: Popup; onClose: (id: string, hideToday: boolean) => void }) {
+  const { lang } = useLang();
   const [hideToday, setHideToday] = useState(false);
 
   const body = (
@@ -77,13 +79,13 @@ function PopupCard({ popup, onClose }: { popup: Popup; onClose: (id: string, hid
               onChange={(e) => setHideToday(e.target.checked)}
               className="rounded border-gray-300"
             />
-            오늘 하루 보지 않기
+            {lang === "ko" ? "오늘 하루 보지 않기" : "Do not show today"}
           </label>
           <button
             onClick={() => onClose(popup.id, hideToday)}
             className="text-xs font-medium text-gray-500 hover:text-gray-800"
           >
-            닫기
+            {lang === "ko" ? "닫기" : "Close"}
           </button>
         </div>
       </div>
@@ -92,6 +94,7 @@ function PopupCard({ popup, onClose }: { popup: Popup; onClose: (id: string, hid
 }
 
 export default function PopupDisplay() {
+  const { lang } = useLang();
   const [closed, setClosed] = useState<string[]>([]);
 
   const { data: popups = [] } = useQuery({
@@ -99,9 +102,12 @@ export default function PopupDisplay() {
     queryFn: getActivePopups,
   });
 
-  const visible = popups.filter(
-    (p) => !closed.includes(p.id) && !localStorage.getItem(todayKey(p.id))
-  );
+  const visible = popups.filter((p) => {
+    if (closed.includes(p.id) || localStorage.getItem(todayKey(p.id))) return false;
+    // 언어별 필터링: target_lang이 없거나 "all"이면 항상 표시, "ko"나 "en"이면 해당 사이트 언어일 때만 표시
+    if (!p.target_lang || p.target_lang === "all") return true;
+    return p.target_lang === lang;
+  });
 
   const handleClose = (id: string, hideToday: boolean) => {
     if (hideToday) localStorage.setItem(todayKey(id), "1");

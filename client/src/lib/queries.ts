@@ -537,11 +537,25 @@ export async function getAllPopups(): Promise<Popup[]> {
 }
 
 export async function createPopup(popup: Omit<Popup, "id">): Promise<Popup> {
+  const payload: Record<string, unknown> = { ...popup };
   const { data, error } = await supabase
     .from("popups")
-    .insert(popup as Record<string, unknown>)
+    .insert(payload)
     .select()
     .single();
+
+  if (error && error.message.includes("target_lang")) {
+    console.warn("popups 테이블에 target_lang 컬럼이 없어 제외하고 저장합니다.", error.message);
+    delete payload.target_lang;
+    const retry = await supabase
+      .from("popups")
+      .insert(payload)
+      .select()
+      .single();
+    if (retry.error) throw retry.error;
+    return retry.data as Popup;
+  }
+
   if (error) throw error;
   return data as Popup;
 }
@@ -550,10 +564,23 @@ export async function updatePopup(
   id: string,
   updates: Partial<Omit<Popup, "id">>
 ): Promise<void> {
+  const payload: Record<string, unknown> = { ...updates };
   const { error } = await supabase
     .from("popups")
-    .update(updates as Record<string, unknown>)
+    .update(payload)
     .eq("id", id);
+
+  if (error && error.message.includes("target_lang")) {
+    console.warn("popups 테이블에 target_lang 컬럼이 없어 제외하고 업데이트합니다.", error.message);
+    delete payload.target_lang;
+    const retry = await supabase
+      .from("popups")
+      .update(payload)
+      .eq("id", id);
+    if (retry.error) throw retry.error;
+    return;
+  }
+
   if (error) throw error;
 }
 

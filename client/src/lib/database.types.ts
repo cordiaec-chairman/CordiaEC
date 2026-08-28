@@ -77,6 +77,8 @@ export interface HeroSlide {
 
 export type PopupPosition = "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
+export type PopupTargetLang = "all" | "ko" | "en";
+
 export interface Popup {
   id: string;
   title: string;
@@ -90,6 +92,7 @@ export interface Popup {
   starts_at: string;
   ends_at: string;
   is_active: boolean;
+  target_lang?: PopupTargetLang;
 }
 
 // supabase-js가 요구하는 Database 제네릭 타입
