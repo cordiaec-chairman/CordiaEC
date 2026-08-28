@@ -224,6 +224,14 @@ export async function deletePost(id: string): Promise<void> {
 // 기본 폴백 가데이터 제거 (오직 Supabase DB의 실제 데이터만 단일 진실 공급원으로 사용)
 export const DEFAULT_MILESTONES: Milestone[] = [];
 
+// 기존 영문 데이터에 대한 기본 국문 매핑 (DB의 description_ko가 null일 때 자동 보정)
+const KNOWN_MILESTONE_KO_MAP: Record<string, string> = {
+  "Founded in 1985": "인하대학교 국제관계연구소 설립",
+  "Expanded in 2022": "K-학술확산연구센터 출범 및 학술·문화 확산 프로젝트 본격화",
+  "New beginning in 2025": "글로벌 허브 CordiaEC 설립 — 한국학 전문성과 글로벌 비즈니스·문화 가치 연결",
+  "Today & Beyond": "신뢰받는 글로벌 네트워크 및 국경을 넘나드는 상생 협력 플랫폼으로 도약",
+};
+
 export async function getMilestones(): Promise<Milestone[]> {
   try {
     const { data, error } = await supabase
@@ -234,7 +242,13 @@ export async function getMilestones(): Promise<Milestone[]> {
       console.error("Milestones query error:", error);
       return [];
     }
-    return (data ?? []) as Milestone[];
+    const list = (data ?? []) as Milestone[];
+    return list.map((m) => {
+      if (!m.description_ko && KNOWN_MILESTONE_KO_MAP[m.period_label]) {
+        return { ...m, description_ko: KNOWN_MILESTONE_KO_MAP[m.period_label] };
+      }
+      return m;
+    });
   } catch (err) {
     console.error("Milestones fetch exception:", err);
     return [];

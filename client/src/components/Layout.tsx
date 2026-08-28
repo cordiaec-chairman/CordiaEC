@@ -65,13 +65,58 @@ export default function Layout({ children }: LayoutProps) {
   const SnsLinks = ({
     size = "md",
     direction = "row",
+    variant = "badge",
   }: {
     size?: "sm" | "md" | "lg";
     direction?: "row" | "col";
+    variant?: "badge" | "minimal";
   }) => {
     const youtube = settings?.sns_youtube || "https://www.youtube.com/@inhak-academy2859";
     const instagram = settings?.sns_instagram || "https://www.instagram.com/cordiaec/";
     const xLink = settings?.sns_x || "https://x.com/Cordia_EC";
+
+    if (variant === "minimal") {
+      return (
+        <div className="flex items-center gap-3">
+          {youtube && (
+            <a
+              href={youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-300 hover:text-red-400 transition-colors p-1"
+              title="YouTube"
+              aria-label="CordiaEC YouTube"
+            >
+              <Youtube className="w-5 h-5" />
+            </a>
+          )}
+          {instagram && (
+            <a
+              href={instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-300 hover:text-pink-400 transition-colors p-1"
+              title="Instagram"
+              aria-label="CordiaEC Instagram"
+            >
+              <Instagram className="w-5 h-5" />
+            </a>
+          )}
+          {xLink && (
+            <a
+              href={xLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-300 hover:text-white transition-colors p-1"
+              title="X"
+              aria-label="CordiaEC X"
+            >
+              <XIcon className="w-4 h-4" />
+            </a>
+          )}
+        </div>
+      );
+    }
 
     const badgeSizes = {
       sm: "w-8 h-8",
@@ -285,12 +330,7 @@ export default function Layout({ children }: LayoutProps) {
                 <img src={logoText} alt="CordiaEC" className="h-6 w-auto brightness-0 invert object-contain shrink-0" style={{ height: "24px", maxHeight: "24px", width: "auto" }} />
               </div>
               <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed max-w-sm">{t("footer.tagline")}</p>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                  Official Channels
-                </p>
-                <SnsLinks size="md" />
-              </div>
+              <SnsLinks variant="minimal" />
             </div>
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider mb-3 text-slate-200">{t("footer.quickLinks")}</h3>

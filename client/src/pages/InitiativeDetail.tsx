@@ -27,13 +27,18 @@ export default function InitiativeDetail() {
     queryKey: ["posts_by_initiative", slug],
     queryFn: () =>
       getPosts({
-        board: "news",
         initiativeSlug: slug,
         page: 1,
         limit: 100,
       }),
     enabled: !!slug,
   });
+
+  const getPostRoute = (post: Post) => {
+    if (post.board === "reports") return `/reports/${post.id}`;
+    if (post.board === "diaspora") return `/overseas-korean/${post.id}`;
+    return `/news/${post.id}`;
+  };
 
   const articles: Post[] = postsData?.posts ?? [];
 
@@ -163,37 +168,50 @@ export default function InitiativeDetail() {
               </div>
             ) : (
               <div className="space-y-3">
-                {articles.map((article) => (
-                  <div
-                    key={article.id}
-                    onClick={() => navigate(`/news/${article.id}`)}
-                    className="flex items-center gap-4 bg-white border border-slate-200/90 rounded-xl p-4 hover:shadow-md hover:border-slate-400 transition-all cursor-pointer group"
-                    data-testid={`row-related-news-${article.id}`}
-                  >
-                    <div className="w-28 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center">
-                      {article.image_url ? (
-                        <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <ImageIcon className="w-6 h-6 text-slate-300" />
-                      )}
+                {articles.map((article) => {
+                  const boardLabel = {
+                    news: lang === "ko" ? "뉴스" : "News",
+                    reports: lang === "ko" ? "보고서" : "Report",
+                    diaspora: lang === "ko" ? "K-디아스포라" : "Diaspora",
+                  }[article.board] || "Post";
+
+                  return (
+                    <div
+                      key={article.id}
+                      onClick={() => navigate(getPostRoute(article))}
+                      className="flex items-center gap-4 bg-white border border-slate-200/90 rounded-xl p-4 hover:shadow-md hover:border-slate-400 transition-all cursor-pointer group"
+                      data-testid={`row-related-news-${article.id}`}
+                    >
+                      <div className="w-28 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center">
+                        {article.image_url ? (
+                          <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                            {boardLabel}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-[#0f2445] transition-colors line-clamp-1">
+                          {pickField(article, 'title', lang)}
+                        </h3>
+                        <p className="text-slate-500 text-xs sm:text-sm line-clamp-2 mt-1 leading-relaxed">
+                          {pickField(article, 'excerpt', lang)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 flex flex-col items-end gap-2 text-xs text-slate-400 min-w-[90px]">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(article.published_date).toLocaleDateString("ko-KR")}
+                        </span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#0f2445] shrink-0" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-[#0f2445] transition-colors line-clamp-1">
-                        {pickField(article, 'title', lang)}
-                      </h3>
-                      <p className="text-slate-500 text-xs sm:text-sm line-clamp-2 mt-1 leading-relaxed">
-                        {pickField(article, 'excerpt', lang)}
-                      </p>
-                    </div>
-                    <div className="shrink-0 flex flex-col items-end gap-2 text-xs text-slate-400 min-w-[90px]">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {new Date(article.published_date).toLocaleDateString("ko-KR")}
-                      </span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#0f2445] shrink-0" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

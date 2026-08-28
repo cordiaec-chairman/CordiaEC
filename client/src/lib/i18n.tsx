@@ -7,11 +7,28 @@ const LanguageContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }
   setLang: () => {},
 });
 
+function getInitialLanguage(): Lang {
+  if (typeof window === "undefined") return "en";
+
+  // 1. 이전에 사용자가 직접 선택한 언어가 있으면 최우선 적용
+  const saved = localStorage.getItem("site_lang");
+  if (saved === "ko" || saved === "en") return saved;
+
+  // 2. 첫 방문 시: 브라우저/기기 기본 언어 환경 감지 (한국어 환경이면 KOR, 해외면 ENG)
+  try {
+    const browserLang = (navigator.language || (navigator as any).userLanguage || "").toLowerCase();
+    if (browserLang.startsWith("ko")) {
+      return "ko";
+    }
+  } catch (e) {
+    console.warn("Language detection fallback to en:", e);
+  }
+
+  return "en";
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    const saved = localStorage.getItem("site_lang");
-    return saved === "ko" || saved === "en" ? saved : "en";
-  });
+  const [lang, setLangState] = useState<Lang>(getInitialLanguage);
   const setLang = (l: Lang) => {
     localStorage.setItem("site_lang", l);
     setLangState(l);

@@ -317,7 +317,7 @@ export default function AdminPostsTab() {
         content_ko: finalContentKo,
         image_url: form.imageUrl || null,
         link_url: form.linkUrl || null,
-        initiative_slug: form.board === "news" && form.initiativeSlug ? form.initiativeSlug : null,
+        initiative_slug: form.initiativeSlug && form.initiativeSlug !== "none" ? form.initiativeSlug : null,
         is_pinned_home: editing ? editing.is_pinned_home : false,
         published_date: new Date(form.publishedDate).toISOString(),
       };

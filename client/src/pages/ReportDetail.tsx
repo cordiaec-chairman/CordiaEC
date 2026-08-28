@@ -89,35 +89,6 @@ export default function ReportDetail() {
             {pickField(report, "title", lang)}
           </h1>
 
-          {/* PDF Download Highlight Banner */}
-          {report.file_url && (
-            <div className="mb-8 p-4 sm:p-5 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-cordia-teal text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-teal-800 uppercase tracking-wide">
-                    Full PDF Report
-                  </p>
-                  <p className="text-sm font-semibold text-cordia-dark truncate">
-                    {report.file_name || "보고서 전문 PDF 파일"}
-                  </p>
-                </div>
-              </div>
-              <a
-                href={report.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-cordia-teal hover:bg-cordia-green text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm shrink-0"
-              >
-                <FileDown className="w-4 h-4" />
-                {t("reports.downloadPdf")}
-              </a>
-            </div>
-          )}
-
           {report.image_url && (
             <img
               src={report.image_url}
@@ -127,7 +98,7 @@ export default function ReportDetail() {
           )}
 
           {report.excerpt && (
-            <div className="p-4 bg-gray-50 border-l-4 border-cordia-teal rounded-r-xl mb-8">
+            <div className="p-4 bg-gray-50 border-l-4 border-slate-400 rounded-r-xl mb-8">
               <p className="text-sm sm:text-base text-gray-700 italic leading-relaxed">
                 {pickField(report, "excerpt", lang)}
               </p>
@@ -137,6 +108,35 @@ export default function ReportDetail() {
           <div className="mt-6">
             <MarkdownRenderer content={pickField(report, "content", lang)} />
           </div>
+
+          {/* PDF Download Section (Bottom, Calm Slate/Navy Tone) */}
+          {report.file_url && (
+            <div className="mt-12 p-5 sm:p-6 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-[#0f2445] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    {lang === "ko" ? "첨부 보고서 전문 (PDF)" : "Full PDF Report"}
+                  </p>
+                  <p className="text-sm sm:text-base font-bold text-slate-900 truncate mt-0.5">
+                    {report.file_name || (lang === "ko" ? "보고서 전문 PDF 파일" : "Report PDF Document")}
+                  </p>
+                </div>
+              </div>
+              <a
+                href={report.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#0f2445] hover:bg-[#1a3a60] text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-xs shrink-0"
+              >
+                <FileDown className="w-4 h-4" />
+                {t("reports.downloadPdf")}
+              </a>
+            </div>
+          )}
 
           {report.link_url && (
             <div className="mt-8 pt-6 border-t border-gray-100 flex items-center gap-3">

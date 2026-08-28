@@ -208,6 +208,16 @@ export default function About() {
               <div className="space-y-6">
                 {milestones.map((milestone: Milestone, idx: number) => {
                   const desc = pickField(milestone, "description", lang);
+                  const periodKoMap: Record<string, string> = {
+                    "Founded in 1985": "1985년 설립",
+                    "Expanded in 2022": "2022년 확장",
+                    "New beginning in 2025": "2025년 새로운 도약",
+                    "Today & Beyond": "현재 그리고 미래",
+                  };
+                  const displayPeriod = lang === "ko" && periodKoMap[milestone.period_label]
+                    ? periodKoMap[milestone.period_label]
+                    : milestone.period_label;
+
                   return (
                     <div
                       key={milestone.id || idx}
@@ -217,7 +227,7 @@ export default function About() {
                       {/* Left: Date Badge */}
                       <div className="flex items-center gap-3 sm:w-32 sm:justify-end shrink-0 pl-12 sm:pl-0">
                         <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-bold text-[#0f2445] shadow-2xs group-hover:border-teal-500 group-hover:text-teal-700 transition-colors">
-                          {milestone.period_label}
+                          {displayPeriod}
                         </div>
                       </div>
 
