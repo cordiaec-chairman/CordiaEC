@@ -31,7 +31,7 @@ export default function Contact() {
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Contact Information */}
             <div>
-              <h2 className="text-xl font-bold text-cordia-dark mb-5">Contact Information</h2>
+              <h2 className="text-xl font-bold text-cordia-dark mb-5">{t('contact.infoTitle')}</h2>
               
               <div className="space-y-6">
                 <Card className="border-l-4 border-cordia-teal">
@@ -41,7 +41,7 @@ export default function Contact() {
                         <Mail className="text-cordia-teal text-xl" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-cordia-dark mb-1">Email</h3>
+                        <h3 className="font-semibold text-cordia-dark mb-1">{t('contact.email')}</h3>
                         <p className="text-gray-600" data-testid="text-contact-email">
                           cordiaec@gmail.com
                         </p>
@@ -57,7 +57,7 @@ export default function Contact() {
                         <Phone className="text-cordia-green text-xl" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-cordia-dark mb-1">Phone</h3>
+                        <h3 className="font-semibold text-cordia-dark mb-1">{t('contact.phone')}</h3>
                         <p className="text-gray-600" data-testid="text-contact-phone">
                           +82-032-860-8265
                         </p>
@@ -73,10 +73,9 @@ export default function Contact() {
                         <MapPin className="text-cordia-blue text-xl" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-cordia-dark mb-1">Address</h3>
-                        <p className="text-gray-600" data-testid="text-contact-address">
-                          K-ACADEMIC DIFFUSION RESEARCH CENTER. 100 Inha-ro<br />
-                          Michuhol-gu, Incheon 22212, KOREA.
+                        <h3 className="font-semibold text-cordia-dark mb-1">{t('contact.address')}</h3>
+                        <p className="text-gray-600 whitespace-pre-line" data-testid="text-contact-address">
+                          {t('contact.addressValue')}
                         </p>
                       </div>
                     </div>
@@ -85,15 +84,15 @@ export default function Contact() {
               </div>
               
               <div className="mt-8">
-                <h3 className="text-xl font-bold text-cordia-dark mb-4">Business Hours</h3>
+                <h3 className="text-xl font-bold text-cordia-dark mb-4">{t('contact.businessHours')}</h3>
                 <div className="space-y-2 text-gray-600">
                   <div className="flex justify-between">
-                    <span>Monday - Friday:</span>
-                    <span>10:00 AM - 4:00 PM KST</span>
+                    <span>{t('contact.weekdays')}</span>
+                    <span>{t('contact.weekdaysTime')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Saturday - Sunday:</span>
-                    <span>Closed</span>
+                    <span>{t('contact.weekends')}</span>
+                    <span>{t('contact.weekendsClosed')}</span>
                   </div>
                 </div>
               </div>
@@ -103,10 +102,9 @@ export default function Contact() {
             <div>
               <Card className="shadow-lg">
                 <CardContent className="p-8">
-                  <h2 className="text-2xl font-bold text-cordia-dark mb-6">Send us a Message</h2>
+                  <h2 className="text-2xl font-bold text-cordia-dark mb-6">{t('contact.formTitle')}</h2>
                   <p className="text-gray-600 mb-6">
-                    Have a question about our programs or want to explore partnership opportunities? 
-                    We'd love to hear from you.
+                    {t('contact.formDesc')}
                   </p>
                   
                   <div className="text-center">
@@ -115,17 +113,17 @@ export default function Contact() {
                       className="bg-cordia-teal text-white px-8 py-4 rounded-lg hover:bg-cordia-green transition-colors font-medium shadow-lg hover:scale-105 transition-all duration-300"
                       data-testid="button-open-contact-form"
                     >
-                      Open Contact Form
+                      {t('contact.openFormBtn')}
                     </button>
                   </div>
                   
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="font-semibold text-cordia-dark mb-3">What to expect:</h4>
+                    <h4 className="font-semibold text-cordia-dark mb-3">{t('contact.expectTitle')}</h4>
                     <ul className="space-y-2 text-gray-600 text-sm">
-                      <li>• Response within 24 hours during business days</li>
-                      <li>• Dedicated support for partnership inquiries</li>
-                      <li>• Multilingual support available</li>
-                      <li>• Follow-up consultation if needed</li>
+                      <li>• {t('contact.expect1')}</li>
+                      <li>• {t('contact.expect2')}</li>
+                      <li>• {t('contact.expect3')}</li>
+                      <li>• {t('contact.expect4')}</li>
                     </ul>
                   </div>
                 </CardContent>

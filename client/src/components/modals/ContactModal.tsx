@@ -21,14 +21,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { submitContact } from "@/lib/queries";
+import { useT, useLang } from "@/lib/i18n";
 
-const contactFormSchema = z.object({
-  name: z.string().min(1, "Name is required").min(2, "Name must be at least 2 characters"),
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
-  message: z.string().min(1, "Message is required").min(10, "Message must be at least 10 characters"),
-});
-
-type ContactFormData = z.infer<typeof contactFormSchema>;
+type ContactFormData = { name: string; email: string; message: string };
 
 interface ContactModalProps {
   open: boolean;
@@ -38,13 +33,30 @@ interface ContactModalProps {
 
 export default function ContactModal({ open, onOpenChange, defaultSubject }: ContactModalProps) {
   const { toast } = useToast();
+  const t = useT();
+  const { lang } = useLang();
+
+  // 언어에 따라 유효성 검사 메시지 분기
+  const contactFormSchema = z.object({
+    name: z.string()
+      .min(1, t("contact.validationName"))
+      .min(2, t("contact.validationNameMin")),
+    email: z.string()
+      .min(1, t("contact.validationEmail"))
+      .email(t("contact.validationEmailFormat")),
+    message: z.string()
+      .min(1, t("contact.validationMessage"))
+      .min(10, t("contact.validationMessageMin")),
+  });
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
       name: "",
       email: "",
-      message: defaultSubject ? `문의 제목: ${defaultSubject}\n\n` : "",
+      message: defaultSubject
+        ? (lang === "ko" ? `문의 제목: ${defaultSubject}\n\n` : `Subject: ${defaultSubject}\n\n`)
+        : "",
     },
   });
 
@@ -52,16 +64,16 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
     mutationFn: submitContact,
     onSuccess: () => {
       toast({
-        title: "Message Sent Successfully",
-        description: "Thank you for contacting us. We'll get back to you soon!",
+        title: t("contact.successTitle"),
+        description: t("contact.successDesc"),
       });
       form.reset();
       onOpenChange(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Send Message",
-        description: error.message || "Something went wrong. Please try again.",
+        title: t("contact.errorTitle"),
+        description: error.message || t("contact.errorDesc"),
         variant: "destructive",
       });
     },
@@ -75,11 +87,11 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" data-testid="modal-contact">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-cordia-dark">Contact Us</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-cordia-dark">{t("contact.modalTitle")}</DialogTitle>
         </DialogHeader>
         
         <p className="text-gray-600 mb-6">
-          We're here to help. Reach out to us with any questions or inquiries.
+          {t("contact.modalDesc")}
         </p>
         
         <Form {...form}>
@@ -89,10 +101,10 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("contact.labelName")}</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Your Name" 
+                      placeholder={t("contact.placeholderName")} 
                       {...field} 
                       data-testid="input-name"
                     />
@@ -107,11 +119,11 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t("contact.labelEmail")}</FormLabel>
                   <FormControl>
                     <Input 
                       type="email" 
-                      placeholder="Your Email" 
+                      placeholder={t("contact.placeholderEmail")} 
                       {...field}
                       data-testid="input-email"
                     />
@@ -126,10 +138,10 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
               name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Message</FormLabel>
+                  <FormLabel>{t("contact.labelMessage")}</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Your message..." 
+                      placeholder={t("contact.placeholderMessage")} 
                       rows={4} 
                       className="resize-none" 
                       {...field}
@@ -149,7 +161,7 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
                 onClick={() => onOpenChange(false)}
                 data-testid="button-cancel"
               >
-                Cancel
+                {t("contact.btnCancel")}
               </Button>
               <Button 
                 type="submit" 
@@ -157,7 +169,7 @@ export default function ContactModal({ open, onOpenChange, defaultSubject }: Con
                 disabled={contactMutation.isPending}
                 data-testid="button-submit"
               >
-                {contactMutation.isPending ? "Sending..." : "Submit"}
+                {contactMutation.isPending ? t("contact.btnSending") : t("contact.btnSubmit")}
               </Button>
             </div>
           </form>
