@@ -16,15 +16,15 @@ import AdminPopupsTab from "@/components/admin/AdminPopupsTab";
 import AdminPartnersTab from "@/components/admin/AdminPartnersTab";
 
 const MENU = [
-  { id: "posts", label: "게시글/보고서", icon: FileText },
-  { id: "glossary", label: "번역 고정 용어집", icon: BookOpen },
-  { id: "partners", label: "협력사", icon: Handshake },
   { id: "hero", label: "히어로", icon: Images },
   { id: "popups", label: "팝업", icon: Megaphone },
-  { id: "initiatives", label: "이니셔티브", icon: Layers },
   { id: "milestones", label: "연혁", icon: History },
+  { id: "initiatives", label: "이니셔티브", icon: Layers },
+  { id: "posts", label: "게시글/보고서", icon: FileText },
+  { id: "partners", label: "협력사", icon: Handshake },
   { id: "home", label: "홈/SNS 설정", icon: LayoutGrid },
   { id: "contacts", label: "문의함", icon: Mail },
+  { id: "glossary", label: "번역 고정 용어집", icon: BookOpen },
 ] as const;
 
 type MenuId = (typeof MENU)[number]["id"];
@@ -32,7 +32,7 @@ type MenuId = (typeof MENU)[number]["id"];
 export default function Admin() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
-  const [active, setActive] = useState<MenuId>("posts");
+  const [active, setActive] = useState<MenuId>("hero");
 
   const handleLogout = async () => {
     try {

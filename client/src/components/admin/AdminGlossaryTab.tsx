@@ -107,14 +107,6 @@ export default function AdminGlossaryTab() {
     setDeleteTarget(null);
   };
 
-  const handleResetDefaults = () => {
-    // 기존에 없는 기본 항목들을 병합
-    const existingKo = new Set(glossary.map((g) => g.ko));
-    const toAdd = DEFAULT_GLOSSARY.filter((d) => !existingKo.has(d.ko));
-    const merged = [...glossary, ...toAdd];
-    saveMutation.mutate(merged);
-    toast({ title: "기본 추천 공식 명칭이 사전에 추가되었습니다." });
-  };
 
   const filtered = glossary.filter(
     (item) =>
@@ -160,17 +152,6 @@ export default function AdminGlossaryTab() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleResetDefaults}
-            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-9 font-medium"
-            title="기본 추천 고유명사(K학술확산연구센터, 국제관계연구소 등)를 추가합니다."
-          >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-indigo-500" />
-            추천 공식 명칭 가져오기
-          </Button>
-
           <Button
             size="sm"
             onClick={openCreate}
