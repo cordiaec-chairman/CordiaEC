@@ -9,7 +9,7 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const { data: slides = [] } = useQuery({
+  const { data: slides = [], isLoading } = useQuery({
     queryKey: ["hero_slides"],
     queryFn: getActiveHeroSlides,
   });
@@ -36,7 +36,16 @@ export default function HeroCarousel() {
     if (current >= count && count > 0) setCurrent(0);
   }, [count, current]);
 
-  if (count === 0) return null;
+  if (count === 0) {
+    if (isLoading) {
+      return (
+        <section className="relative h-[440px] sm:h-[500px] lg:h-[540px] bg-[#0c182b] overflow-hidden flex items-center justify-center">
+          <div className="animate-pulse w-12 h-12 rounded-full bg-white/10" />
+        </section>
+      );
+    }
+    return null;
+  }
 
   const slide = slides[Math.min(current, count - 1)];
 
