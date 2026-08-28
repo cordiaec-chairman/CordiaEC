@@ -49,20 +49,41 @@ export default function AdminHeroTab() {
   const [interval, setIntervalValue] = useState("5");
   const [translating, setTranslating] = useState(false);
 
-  const handleTranslate = async () => {
+  const handleTranslateKoToEn = async () => {
     if (!form.headlineKo.trim() && !form.subLinesKo.trim()) {
       toast({ title: "번역할 국문 내용이 없습니다.", variant: "destructive" });
       return;
     }
     setTranslating(true);
     try {
-      const [headline, subLines] = await translateTexts([form.headlineKo || " ", form.subLinesKo || " "]);
+      const [headline, subLines] = await translateTexts([form.headlineKo || " ", form.subLinesKo || " "], "EN-US");
       setForm((f) => ({
         ...f,
         headline: f.headlineKo.trim() ? headline.trim() : f.headline,
         subLines: f.subLinesKo.trim() ? subLines.trim() : f.subLines,
       }));
-      toast({ title: "번역 완료", description: "영문 칸을 확인하세요." });
+      toast({ title: "영문 번역 완료", description: "영문 칸에 번역된 내용이 입력되었습니다." });
+    } catch (err: any) {
+      toast({ title: "번역 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateEnToKo = async () => {
+    if (!form.headline.trim() && !form.subLines.trim()) {
+      toast({ title: "번역할 영문 내용이 없습니다.", variant: "destructive" });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [headlineKo, subLinesKo] = await translateTexts([form.headline || " ", form.subLines || " "], "KO");
+      setForm((f) => ({
+        ...f,
+        headlineKo: f.headline.trim() ? headlineKo.trim() : f.headlineKo,
+        subLinesKo: f.subLines.trim() ? subLinesKo.trim() : f.subLinesKo,
+      }));
+      toast({ title: "국문 번역 완료", description: "국문 칸에 번역된 내용이 입력되었습니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
     } finally {
@@ -328,16 +349,26 @@ export default function AdminHeroTab() {
               </div>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
                 type="button"
                 variant="outline"
-                className="border-cordia-teal/50 text-cordia-teal hover:bg-cordia-teal/5"
-                onClick={handleTranslate}
+                className="border-blue-300 text-blue-700 bg-blue-50/50 hover:bg-blue-100 text-xs"
+                onClick={handleTranslateKoToEn}
                 disabled={translating}
               >
-                <Languages className="w-4 h-4 mr-2" />
-                {translating ? "번역 중..." : "국문 → 영문 자동 번역 (DeepL)"}
+                <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                {translating ? "번역 중..." : "🇰🇷 국문 → 🇺🇸 영문 번역"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 text-xs"
+                onClick={handleTranslateEnToKo}
+                disabled={translating}
+              >
+                <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                {translating ? "번역 중..." : "🇺🇸 영문 → 🇰🇷 국문 번역"}
               </Button>
             </div>
 

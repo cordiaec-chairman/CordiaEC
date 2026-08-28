@@ -37,7 +37,7 @@ export default function AdminInitiativesTab() {
   });
   const [translating, setTranslating] = useState(false);
 
-  const handleTranslate = async () => {
+  const handleTranslateKoToEn = async () => {
     const src = [form.titleKo, form.descriptionKo, form.contentKo];
     if (!src.some((t) => t.trim())) {
       toast({ title: "번역할 국문 내용이 없습니다.", variant: "destructive" });
@@ -45,14 +45,37 @@ export default function AdminInitiativesTab() {
     }
     setTranslating(true);
     try {
-      const [title, description, content] = await translateTexts(src.map((t) => t || " "));
+      const [title, description, content] = await translateTexts(src.map((t) => t || " "), "EN-US");
       setForm((f) => ({
         ...f,
         title: f.titleKo.trim() ? title.trim() : f.title,
         description: f.descriptionKo.trim() ? description.trim() : f.description,
         content: f.contentKo.trim() ? content.trim() : f.content,
       }));
-      toast({ title: "번역 완료" });
+      toast({ title: "영문 번역 완료", description: "영문 입력란에 번역되었습니다." });
+    } catch (err: any) {
+      toast({ title: "번역 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateEnToKo = async () => {
+    const src = [form.title, form.description, form.content];
+    if (!src.some((t) => t.trim())) {
+      toast({ title: "번역할 영문 내용이 없습니다.", variant: "destructive" });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [titleKo, descriptionKo, contentKo] = await translateTexts(src.map((t) => t || " "), "KO");
+      setForm((f) => ({
+        ...f,
+        titleKo: f.title.trim() ? titleKo.trim() : f.titleKo,
+        descriptionKo: f.description.trim() ? descriptionKo.trim() : f.descriptionKo,
+        contentKo: f.content.trim() ? contentKo.trim() : f.contentKo,
+      }));
+      toast({ title: "국문 번역 완료", description: "국문 입력란에 번역되었습니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
     } finally {
@@ -156,16 +179,26 @@ export default function AdminInitiativesTab() {
                 <Textarea rows={5} value={form.contentKo} onChange={(e) => setForm({ ...form, contentKo: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
                 type="button"
                 variant="outline"
-                className="border-slate-300 text-slate-700 hover:bg-slate-50"
-                onClick={handleTranslate}
+                className="border-blue-300 text-blue-700 bg-blue-50/50 hover:bg-blue-100 text-xs"
+                onClick={handleTranslateKoToEn}
                 disabled={translating}
               >
-                <Languages className="w-4 h-4 mr-2" />
-                {translating ? "번역 중..." : "국문 → 영문 자동 번역 (DeepL)"}
+                <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                {translating ? "번역 중..." : "🇰🇷 국문 → 🇺🇸 영문 번역"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 text-xs"
+                onClick={handleTranslateEnToKo}
+                disabled={translating}
+              >
+                <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                {translating ? "번역 중..." : "🇺🇸 영문 → 🇰🇷 국문 번역"}
               </Button>
             </div>
             <div>

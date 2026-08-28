@@ -187,9 +187,10 @@ export default function AdminPopupsTab() {
       if (sourcePopup.title) textsToTranslate.push(sourcePopup.title);
       if (sourcePopup.content?.trim()) textsToTranslate.push(sourcePopup.content);
 
+      const targetDeepLLang = targetOppositeLang === "ko" ? "KO" : "EN-US";
       if (textsToTranslate.length > 0) {
         toast({ title: "DeepL 번역 중...", description: `${targetOppositeName}로 초안을 자동 생성합니다.` });
-        const translations = await translateTexts(textsToTranslate);
+        const translations = await translateTexts(textsToTranslate, targetDeepLLang);
         if (translations[0]) translatedTitle = translations[0];
         if (translations[1]) translatedContent = translations[1];
       }
@@ -236,15 +237,16 @@ export default function AdminPopupsTab() {
       if (form.title.trim()) texts.push(form.title);
       if (form.content.trim()) texts.push(form.content);
 
-      const translations = await translateTexts(texts);
+      // 번역 후 타겟 언어도 자동 토글
+      const nextLang: PopupTargetLang = form.targetLang === "ko" ? "en" : form.targetLang === "en" ? "ko" : "en";
+      const targetDeepLLang = nextLang === "ko" ? "KO" : "EN-US";
+
+      const translations = await translateTexts(texts, targetDeepLLang);
       let newTitle = form.title;
       let newContent = form.content;
       let ptr = 0;
       if (form.title.trim()) newTitle = translations[ptr++] || form.title;
       if (form.content.trim()) newContent = translations[ptr++] || form.content;
-
-      // 번역 후 타겟 언어도 자동 토글
-      const nextLang: PopupTargetLang = form.targetLang === "ko" ? "en" : form.targetLang === "en" ? "ko" : "en";
 
       setForm((prev) => ({
         ...prev,

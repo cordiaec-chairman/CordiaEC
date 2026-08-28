@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   }
 
   // 2) 번역 요청
-  const { texts } = req.body || {};
+  const { texts, targetLang = "EN-US", sourceLang } = req.body || {};
   if (!Array.isArray(texts) || texts.length === 0 || texts.length > 20) {
     res.status(400).json({ error: "texts는 1개 이상 20개 이하의 문자열 배열이어야 합니다." });
     return;
@@ -64,11 +64,16 @@ export default async function handler(req, res) {
     ? "https://api.deepl.com/v2/translate"
     : "https://api-free.deepl.com/v2/translate";
 
-  const payloadBody = JSON.stringify({
+  const target = targetLang === "KO" ? "KO" : "EN-US";
+  const payload: Record<string, unknown> = {
     text: texts.map((t) => String(t).slice(0, 20000)),
-    source_lang: "KO",
-    target_lang: "EN-US",
-  });
+    target_lang: target,
+  };
+  if (sourceLang) {
+    payload.source_lang = sourceLang.toUpperCase();
+  }
+
+  const payloadBody = JSON.stringify(payload);
 
   async function callDeepL(endpoint) {
     return fetch(endpoint, {

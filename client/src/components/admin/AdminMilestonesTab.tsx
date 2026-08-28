@@ -47,16 +47,33 @@ export default function AdminMilestonesTab() {
   });
   const [translating, setTranslating] = useState(false);
 
-  const handleTranslate = async () => {
+  const handleTranslateKoToEn = async () => {
     if (!form.descriptionKo.trim()) {
       toast({ title: "번역할 국문 내용이 없습니다.", variant: "destructive" });
       return;
     }
     setTranslating(true);
     try {
-      const [description] = await translateTexts([form.descriptionKo]);
+      const [description] = await translateTexts([form.descriptionKo], "EN-US");
       setForm((f) => ({ ...f, description: description.trim() }));
-      toast({ title: "번역 완료" });
+      toast({ title: "영문 번역 완료", description: "영문 내용란에 입력되었습니다." });
+    } catch (err: any) {
+      toast({ title: "번역 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateEnToKo = async () => {
+    if (!form.description.trim()) {
+      toast({ title: "번역할 영문 내용이 없습니다.", variant: "destructive" });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [descriptionKo] = await translateTexts([form.description], "KO");
+      setForm((f) => ({ ...f, descriptionKo: descriptionKo.trim() }));
+      toast({ title: "국문 번역 완료", description: "국문 내용란에 입력되었습니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
     } finally {
@@ -239,16 +256,26 @@ export default function AdminMilestonesTab() {
                 placeholder={"한 줄에 하나씩 입력하세요.\n예:\n이주 및 재외동포센터 설립"}
               />
             </div>
-            <div className="flex justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
                 type="button"
                 variant="outline"
-                className="border-cordia-teal/50 text-cordia-teal hover:bg-cordia-teal/5"
-                onClick={handleTranslate}
+                className="border-blue-300 text-blue-700 bg-blue-50/50 hover:bg-blue-100 text-xs"
+                onClick={handleTranslateKoToEn}
                 disabled={translating}
               >
-                <Languages className="w-4 h-4 mr-2" />
-                {translating ? "번역 중..." : "국문 → 영문 자동 번역 (DeepL)"}
+                <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                {translating ? "번역 중..." : "🇰🇷 국문 → 🇺🇸 영문 번역"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 text-xs"
+                onClick={handleTranslateEnToKo}
+                disabled={translating}
+              >
+                <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                {translating ? "번역 중..." : "🇺🇸 영문 → 🇰🇷 국문 번역"}
               </Button>
             </div>
             <div>

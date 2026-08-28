@@ -180,15 +180,15 @@ export default function AdminPostsTab() {
     }
   };
 
-  const handleTranslate = async () => {
+  const handleTranslateKoToEn = async () => {
     const sources = [form.titleKo, form.excerptKo, form.contentKo];
     if (!sources.some((t) => t.trim())) {
-      toast({ title: "번역할 국문 내용이 없습니다.", variant: "destructive" });
+      toast({ title: "번역할 국문 내용이 없습니다.", description: "국문 제목 또는 내용을 먼저 작성해주세요.", variant: "destructive" });
       return;
     }
     setTranslating(true);
     try {
-      const [title, excerpt, content] = await translateTexts(sources.map((t) => t || " "));
+      const [title, excerpt, content] = await translateTexts(sources.map((t) => t || " "), "EN-US");
       setForm((f) => ({
         ...f,
         title: f.titleKo.trim() ? title.trim() : f.title,
@@ -196,7 +196,31 @@ export default function AdminPostsTab() {
         content: f.contentKo.trim() ? content.trim() : f.content,
       }));
       setActiveLangTab("en");
-      toast({ title: "영문 자동 번역 완료", description: "마크다운 서식 및 이미지가 안전하게 보존된 상태로 번역되었습니다." });
+      toast({ title: "영문 자동 번역 완료", description: "국문 내용을 바탕으로 영문이 생성되었습니다. 영문 탭으로 이동합니다." });
+    } catch (err: any) {
+      toast({ title: "번역 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateEnToKo = async () => {
+    const sources = [form.title, form.excerpt, form.content];
+    if (!sources.some((t) => t.trim())) {
+      toast({ title: "번역할 영문 내용이 없습니다.", description: "영문 제목 또는 내용을 먼저 작성해주세요.", variant: "destructive" });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [titleKo, excerptKo, contentKo] = await translateTexts(sources.map((t) => t || " "), "KO");
+      setForm((f) => ({
+        ...f,
+        titleKo: f.title.trim() ? titleKo.trim() : f.titleKo,
+        excerptKo: f.excerpt.trim() ? excerptKo.trim() : f.excerptKo,
+        contentKo: f.content.trim() ? contentKo.trim() : f.contentKo,
+      }));
+      setActiveLangTab("ko");
+      toast({ title: "국문 자동 번역 완료", description: "영문 내용을 바탕으로 국문이 생성되었습니다. 국문 탭으로 이동합니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
     } finally {
@@ -768,19 +792,34 @@ export default function AdminPostsTab() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* 국문 -> 영문 DeepL 번역 */}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-[#0f2445] text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
-                    onClick={handleTranslate}
-                    disabled={translating || !form.titleKo}
-                    title="국문 내용을 기반으로 영문 필드를 자동 번역합니다 (서식/사진 보존)"
-                  >
-                    <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                    {translating ? "번역 중..." : "국문 → 영문 자동 번역"}
-                  </Button>
+                  {/* 양방향 DeepL 번역 버튼 (현재 탭에 맞춰 국->영 또는 영->국 자동 전환) */}
+                  {activeLangTab === "ko" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 hover:text-blue-900 text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
+                      onClick={handleTranslateKoToEn}
+                      disabled={translating || !form.titleKo}
+                      title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역하여 완성합니다 (서식/사진 보존)"
+                    >
+                      <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                      {translating ? "번역 중..." : "🇰🇷 국문 → 🇺🇸 영문 자동 번역"}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
+                      onClick={handleTranslateEnToKo}
+                      disabled={translating || !form.title}
+                      title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역하여 완성합니다 (서식/사진 보존)"
+                    >
+                      <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                      {translating ? "번역 중..." : "🇺🇸 영문 → 🇰🇷 국문 자동 번역"}
+                    </Button>
+                  )}
 
                   {/* 실시간 미리보기 토글 */}
                   <Button

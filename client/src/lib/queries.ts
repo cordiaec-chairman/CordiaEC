@@ -592,7 +592,10 @@ export async function deletePopup(id: string): Promise<void> {
 // ============================================================
 // DeepL 번역 (관리자 전용 — 마크다운 이미지/태그 보호)
 // ============================================================
-export async function translateTexts(texts: string[]): Promise<string[]> {
+export async function translateTexts(
+  texts: string[],
+  targetLang: "EN-US" | "KO" = "EN-US"
+): Promise<string[]> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("로그인이 필요합니다.");
 
@@ -632,7 +635,7 @@ export async function translateTexts(texts: string[]): Promise<string[]> {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ texts: maskedTexts }),
+    body: JSON.stringify({ texts: maskedTexts, targetLang }),
   });
 
   const contentType = res.headers.get("content-type") || "";
