@@ -57,8 +57,12 @@
 
 ---
 
-### 6. 📝 관리자 포스팅 스튜디오 (Full-Width Rich Posting Studio)
-* **파일**: `client/src/components/admin/AdminPostsTab.tsx`, `client/src/components/MarkdownRenderer.tsx`
+### 6. 📝 관리자 포스팅 스튜디오 & 양방향 자동 번역 (Bidirectional DeepL Translation)
+* **파일**: `api/translate.js`, `client/src/lib/queries.ts`, `client/src/components/admin/AdminPostsTab.tsx`, `client/src/components/admin/AdminPopupsTab.tsx`, `client/src/components/admin/AdminHeroTab.tsx`, `client/src/components/admin/AdminInitiativesTab.tsx`, `client/src/components/admin/AdminMilestonesTab.tsx`
+* **국문 ⇄ 영문 양방향 번역 완벽 지원**:
+  * **영문 탭에서 작성 후 국문 자동 생성 (`[🇺🇸 영문 → 🇰🇷 국문 자동 번역]`)**: 영문 제목, 요약, 본문을 작성한 후 클릭 시 국문 탭으로 자동 번역 및 필드 채우기 지원.
+  * **국문 탭에서 작성 후 영문 자동 생성 (`[🇰🇷 국문 → 🇺🇸 영문 자동 번역]`)**: 국문 탭에서 작성 후 클릭 시 영문 탭으로 자동 번역 및 이동.
+  * 팝업, 메인 히어로 슬라이드, 연혁, 이니셔티브 모든 관리자 탭에서 양방향 번역 도구 제공.
 * **100% 풀 와이드 상하 분할 레이아웃 & 설정 접기/펼치기 (`Settings Collapse`)**: 글 작성 시 상단 설정을 접고 화면 전체를 글쓰기 에디터로 확장 가능.
 * **리치 포스팅 툴바 (Posting Toolbar)**: 소제목(`H2`, `H3`), 볼드, 이탤릭, 인용구, 목록, 링크 도구 및 **본문 내 WebP 85% 자동 압축 사진 삽입 (`[🖼️ 본문 사진 삽입]`)** 지원.
 * **실시간 마크다운 미리보기 모드 (`Live Preview`)** 및 DeepL 번역 시 마크다운/이미지 태그 보존 파이프라인 적용.
