@@ -12,6 +12,8 @@ import Initiatives from "@/pages/Initiatives";
 import InitiativeDetail from "@/pages/InitiativeDetail";
 import News from "@/pages/News";
 import NewsDetail from "@/pages/NewsDetail";
+import Reports from "@/pages/Reports";
+import ReportDetail from "@/pages/ReportDetail";
 import Contact from "@/pages/Contact";
 import OverseasKorean from "@/pages/OverseasKorean";
 import OverseasKoreanDetail from "@/pages/OverseasKoreanDetail";
@@ -36,6 +38,8 @@ function Router() {
         <Route path="/initiatives/:slug" component={InitiativeDetail} />
         <Route path="/news" component={News} />
         <Route path="/news/:id" component={NewsDetail} />
+        <Route path="/reports" component={Reports} />
+        <Route path="/reports/:id" component={ReportDetail} />
         <Route path="/overseas-korean" component={OverseasKorean} />
         <Route path="/overseas-korean/:id" component={OverseasKoreanDetail} />
         <Route path="/contact" component={Contact} />

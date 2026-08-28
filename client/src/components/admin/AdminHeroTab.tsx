@@ -36,6 +36,7 @@ import {
   getSiteSettings,
   updateSiteSetting,
   translateTexts,
+  DEFAULT_HERO_SLIDES,
 } from "@/lib/queries";
 import { Languages } from "lucide-react";
 import type { HeroSlide } from "@/lib/database.types";
@@ -72,7 +73,7 @@ export default function AdminHeroTab() {
 
   const [form, setForm] = useState({ imageUrl: "", headline: "", subLines: "", headlineKo: "", subLinesKo: "" });
 
-  const { data: slides = [] } = useQuery({
+  const { data: slides = DEFAULT_HERO_SLIDES } = useQuery({
     queryKey: ["admin_hero_slides"],
     queryFn: getAllHeroSlides,
   });
@@ -224,7 +225,7 @@ export default function AdminHeroTab() {
       <div>
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-bold text-cordia-dark">히어로 슬라이드 ({slides.length})</h2>
-          <Button onClick={openCreate} className="bg-cordia-teal hover:bg-cordia-green text-white">
+          <Button onClick={openCreate} className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-medium">
             <Plus className="w-4 h-4 mr-2" />새 슬라이드
           </Button>
         </div>
@@ -364,7 +365,7 @@ export default function AdminHeroTab() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)}>취소</Button>
             <Button
-              className="bg-cordia-teal hover:bg-cordia-green text-white"
+              className="bg-[#0f2445] hover:bg-[#1a3a60] text-white"
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || !form.imageUrl || !form.headline.trim()}
             >

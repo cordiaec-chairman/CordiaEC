@@ -14,7 +14,7 @@ export interface Initiative {
 
 export interface Post {
   id: string;
-  board: "news" | "diaspora";
+  board: "news" | "diaspora" | "reports";
   title: string;
   excerpt: string;
   content: string;
@@ -22,6 +22,8 @@ export interface Post {
   excerpt_ko: string | null;
   content_ko: string | null;
   image_url: string | null;
+  file_url?: string | null;
+  file_name?: string | null;
   link_url: string | null;
   initiative_slug: string | null;
   is_pinned_home: boolean;
@@ -49,6 +51,16 @@ export interface Contact {
   name: string;
   email: string;
   message: string;
+  created_at: string;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  logo_url: string;
+  link_url: string | null;
+  display_order: number;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -108,6 +120,11 @@ export type Database = {
         Row: Contact;
         Insert: Omit<Contact, "id" | "created_at">;
         Update: never;
+      };
+      partners: {
+        Row: Partner;
+        Insert: Omit<Partner, "id" | "created_at">;
+        Update: Partial<Omit<Partner, "id" | "created_at">>;
       };
     };
     Views: Record<string, never>;
