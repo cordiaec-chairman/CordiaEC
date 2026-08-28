@@ -6,7 +6,8 @@ import { Menu, X, Globe, Youtube, Instagram, ChevronDown, FileText, Compass } fr
 import { useLang, useT } from "@/lib/i18n";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/queries";
 import logoIcon from "@assets/Icon_png_2-removebg-preview_1754497111079.png";
-import logoText from "@assets/headline_1754497111077.png";
+import logoTextEn from "@assets/headline_1754497111077.png";
+import logoTextKo from "@assets/headline_ko.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -203,9 +204,19 @@ export default function Layout({ children }: LayoutProps) {
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/">
-              <div className="flex items-center space-x-3 cursor-pointer" data-testid="logo">
-                <img src={logoIcon} alt="CordiaEC Icon" className="h-10 w-auto object-contain shrink-0" style={{ height: "40px", maxHeight: "40px", width: "auto" }} />
-                <img src={logoText} alt="CordiaEC" className="h-7.5 w-auto hidden sm:block object-contain shrink-0" style={{ height: "30px", maxHeight: "30px", width: "auto" }} />
+              <div className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer" data-testid="logo">
+                <img
+                  src={logoIcon}
+                  alt="CordiaEC Icon"
+                  className="h-9 sm:h-10 w-auto object-contain shrink-0"
+                  style={{ height: "40px", maxHeight: "40px", width: "auto" }}
+                />
+                <img
+                  src={lang === "ko" ? logoTextKo : logoTextEn}
+                  alt={lang === "ko" ? "지구촌한인세상 Cordia" : "CordiaEC"}
+                  className="h-7 sm:h-8.5 w-auto object-contain shrink-0"
+                  style={{ height: lang === "ko" ? "34px" : "30px", maxHeight: "36px", width: "auto" }}
+                />
               </div>
             </Link>
 
@@ -325,9 +336,19 @@ export default function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8 sm:gap-10">
             <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <img src={logoIcon} alt="CordiaEC Icon" className="h-8 w-auto object-contain shrink-0" style={{ height: "32px", maxHeight: "32px", width: "auto" }} />
-                <img src={logoText} alt="CordiaEC" className="h-6 w-auto brightness-0 invert object-contain shrink-0" style={{ height: "24px", maxHeight: "24px", width: "auto" }} />
+              <div className="flex items-center space-x-2.5 sm:space-x-3 mb-4">
+                <img
+                  src={logoIcon}
+                  alt="CordiaEC Icon"
+                  className="h-8 w-auto object-contain shrink-0"
+                  style={{ height: "32px", maxHeight: "32px", width: "auto" }}
+                />
+                <img
+                  src={lang === "ko" ? logoTextKo : logoTextEn}
+                  alt={lang === "ko" ? "지구촌한인세상 Cordia" : "CordiaEC"}
+                  className="h-6 sm:h-7 w-auto brightness-0 invert object-contain shrink-0"
+                  style={{ height: lang === "ko" ? "28px" : "24px", maxHeight: "30px", width: "auto" }}
+                />
               </div>
               <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed max-w-sm">{t("footer.tagline")}</p>
               <SnsLinks variant="minimal" />
