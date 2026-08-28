@@ -85,15 +85,6 @@ export const DEFAULT_INITIATIVES: Initiative[] = [
 // ============================================================
 // 이니셔티브
 // ============================================================
-export const LEGACY_INITIATIVE_SLUGS = new Set([
-  "k-food",
-  "k-beauty",
-  "startups",
-  "vc-matching",
-  "internships",
-  "forums",
-]);
-
 export async function getInitiatives(): Promise<Initiative[]> {
   if (!isSupabaseConfigured) return DEFAULT_INITIATIVES;
   try {
@@ -102,15 +93,6 @@ export async function getInitiatives(): Promise<Initiative[]> {
       .select("*")
       .order("display_order");
     if (error || !data || data.length === 0) return DEFAULT_INITIATIVES;
-
-    // 운영 DB에 아직 6월 초기 템플릿의 구형 모의 데이터(k-food 등)만 존재하는 경우 공식 기본값 제공
-    const hasOnlyLegacy = (data as Initiative[]).every((item) =>
-      LEGACY_INITIATIVE_SLUGS.has(item.slug)
-    );
-    if (hasOnlyLegacy) {
-      return DEFAULT_INITIATIVES;
-    }
-
     return data as Initiative[];
   } catch {
     return DEFAULT_INITIATIVES;
@@ -145,30 +127,6 @@ export async function updateInitiative(
     .update(updates as Record<string, unknown>)
     .eq("slug", slug);
   if (error) throw error;
-}
-
-export async function syncDefaultInitiatives(): Promise<void> {
-  const legacySlugs = Array.from(LEGACY_INITIATIVE_SLUGS);
-
-  // 1. 기존 구형 이니셔티브를 참조하던 게시글의 FK 안전 해제
-  const { error: postErr } = await supabase
-    .from("posts")
-    .update({ initiative_slug: null })
-    .in("initiative_slug", legacySlugs);
-  if (postErr) console.warn("Failed to reset legacy initiative_slug in posts:", postErr);
-
-  // 2. 구형 모의 이니셔티브 레코드 삭제
-  const { error: delErr } = await supabase
-    .from("initiatives")
-    .delete()
-    .in("slug", legacySlugs);
-  if (delErr) console.warn("Failed to delete legacy initiatives:", delErr);
-
-  // 3. 최신 6대 공식 이니셔티브 삽입/갱신 (upsert)
-  const { error: upsertErr } = await supabase
-    .from("initiatives")
-    .upsert(DEFAULT_INITIATIVES, { onConflict: "slug" });
-  if (upsertErr) throw upsertErr;
 }
 
 // ============================================================
