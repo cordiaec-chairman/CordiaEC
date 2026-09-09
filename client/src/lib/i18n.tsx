@@ -271,3 +271,24 @@ export function useT() {
   const { lang } = useLang();
   return (key: string): string => STRINGS[key]?.[lang] ?? key;
 }
+
+/** 이니셔티브 카테고리/분야 다국어 변환 */
+export function formatInitiativeCategory(category?: string | null, lang: "en" | "ko" = "ko"): string {
+  if (!category) return "";
+  if (lang === "en") return category;
+  const map: Record<string, string> = {
+    "Global Network": "글로벌 네트워크",
+    "K-Economy": "K-이코노미",
+    "K-Culture": "K-컬처 & 라이프",
+    "Geopolitics": "정책 & 지정학",
+    "Expert Network": "전문가 네트워크",
+    "Next-Generation": "차세대 리더십",
+    "Network & Diaspora": "글로벌 네트워크",
+    "Economy & Industry": "K-이코노미",
+    "Culture & Ecosystem": "K-컬처 & 라이프",
+    "Policy & Strategy": "정책 & 지정학",
+    "Knowledge & People": "전문가 네트워크",
+    "Next-Gen Leadership": "차세대 리더십",
+  };
+  return map[category] || category;
+}

@@ -632,7 +632,7 @@ export default function AdminPostsTab() {
                         <SelectItem value="none">전체 / 미지정</SelectItem>
                         {initiatives.map((init) => (
                           <SelectItem key={init.slug} value={init.slug}>
-                            {init.label}
+                            {init.title_ko || init.title}
                           </SelectItem>
                         ))}
                       </SelectContent>

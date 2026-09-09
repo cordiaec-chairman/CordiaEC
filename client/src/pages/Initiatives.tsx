@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import { getInitiatives } from "@/lib/queries";
 import type { Initiative } from "@/lib/database.types";
-import { useLang, useT, pickField } from "@/lib/i18n";
+import { useLang, useT, pickField, formatInitiativeCategory } from "@/lib/i18n";
 
 export default function Initiatives() {
   const [, navigate] = useLocation();
@@ -56,7 +56,7 @@ export default function Initiatives() {
                     />
                   </div>
                   <div className="inline-flex self-start items-center px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-semibold uppercase tracking-wider mb-2.5">
-                    {init.category}
+                    {formatInitiativeCategory(init.category, lang)}
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mb-2.5 group-hover:text-[#0f2445] transition-colors leading-snug">
                     {pickField(init, 'title', lang)}

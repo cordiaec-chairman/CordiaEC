@@ -23,7 +23,7 @@ UPDATE initiatives
 SET
   title = 'Global Korean Connection',
   title_ko = '글로벌 코리안 연결',
-  label = 'Network & Diaspora',
+  label = '글로벌 코리안 연결',
   category = 'Global Network',
   description = 'Overseas Koreans and the diaspora are no longer subjects of support, but a vibrant force connecting global knowledge and experience with the global Korean network.',
   description_ko = '재외동포와 디아스포라는 더 이상 지원 대상이 아니라 세계적 지식과 경험을 글로벌 한인 네트워크와 연결한다.',
@@ -41,7 +41,7 @@ UPDATE initiatives
 SET
   title = 'K-Economy & Global Koreans',
   title_ko = 'K-Economy와 글로벌 한인 교차',
-  label = 'Economy & Industry',
+  label = 'K-Economy와 글로벌 한인 교차',
   category = 'K-Economy',
   description = 'Analyzing and interpreting the intersections between the Korean economy and global Koreans, including AI, semiconductors, supply chains, K-food, and K-beauty.',
   description_ko = 'AI, 반도체, 공급망, K-푸드, K-뷰티 등 한국경제와 글로벌 한인과의 접점을 분석하고 해석한다.',
@@ -59,7 +59,7 @@ UPDATE initiatives
 SET
   title = 'K-Culture & Life',
   title_ko = 'K-Culture & Life',
-  label = 'Culture & Ecosystem',
+  label = 'K-Culture & Life',
   category = 'K-Culture',
   description = 'Culture is not merely an object of consumption but the core of national competitiveness; interpreting food, wine, cities, travel, and history as a unified K-Culture ecosystem.',
   description_ko = '문화는 소비 대상이 아니라 국가 경쟁력의 핵심이며, 음식, 와인, 도시, 여행, 역사 등을 하나의 K 문화 생태계로 해석한다.',
@@ -76,8 +76,8 @@ WHERE slug = 'culture-heritage';
 UPDATE initiatives
 SET
   title = 'Policy & Geopolitics',
-  title_ko = 'Policy & Geopolitics',
-  label = 'Policy & Strategy',
+  title_ko = '정책 & 지정학 (Policy & Geopolitics)',
+  label = '정책 & 지정학',
   category = 'Geopolitics',
   description = 'International politics is not a commentary on events but a lens for reading the future; strategically examining global regions including Northeast Asia, the US, and China.',
   description_ko = '국제 정치는 사건 해설이 아니라 미래를 읽는 프레임이며, 동북아를 비롯 미국과 중국은 물론 글로벌 지역을 전략적으로 조망한다.',
@@ -94,8 +94,8 @@ WHERE slug = 'media-storytelling';
 UPDATE initiatives
 SET
   title = 'Expert Network',
-  title_ko = 'Expert Network',
-  label = 'Knowledge & People',
+  title_ko = '전문가 네트워크 (Expert Network)',
+  label = '전문가 네트워크',
   category = 'Expert Network',
   description = 'A platform where people themselves become content, building a sustainable global Korean knowledge ecosystem through expert DBs, interviews, joint columns, and projects.',
   description_ko = '사람 자체가 콘텐츠가 되는 플랫폼으로 전문가 DB, 인터뷰, 공동 칼럼, 프로젝트를 통해 지속 가능한 글로벌 한인 지식 생태계를 구축한다.',
@@ -113,7 +113,7 @@ UPDATE initiatives
 SET
   title = 'Next-Gen Global Korean Talent & Leadership',
   title_ko = '차세대 글로벌 한인 인재 양성 및 리더십',
-  label = 'Next-Gen Leadership',
+  label = '차세대 글로벌 한인 인재 양성 및 리더십',
   category = 'Next-Generation',
   description = 'Empowering next-generation global Korean youth with leadership, cultural identity, and networks to bridge their homeland and host societies.',
   description_ko = '글로벌 역량과 정체성을 겸비한 차세대 한인 리더를 육성하고, 모국과 거주국을 잇는 미래 지식 네트워크의 주역으로 지원합니다.',

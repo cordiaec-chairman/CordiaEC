@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, ChevronRight, CheckCircle2, ImageIcon } from "lucide-react";
 import { getInitiative, getPosts } from "@/lib/queries";
 import type { Post } from "@/lib/database.types";
-import { useLang, useT, pickField } from "@/lib/i18n";
+import { useLang, useT, pickField, formatInitiativeCategory } from "@/lib/i18n";
 
 export default function InitiativeDetail() {
   const { lang } = useLang();
@@ -98,7 +98,7 @@ export default function InitiativeDetail() {
               </div>
 
               <div className="inline-flex items-center px-3 py-1 rounded bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold uppercase tracking-wider mb-4">
-                {initiative.category}
+                {formatInitiativeCategory(initiative.category, lang)}
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-6 leading-snug">

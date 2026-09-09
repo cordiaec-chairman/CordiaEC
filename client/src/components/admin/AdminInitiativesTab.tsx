@@ -142,15 +142,31 @@ export default function AdminInitiativesTab() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {initiatives.map((init) => (
-          <Card key={init.slug} className="border border-gray-100">
-            <CardContent className="p-4">
-              {init.image_url && (
-                <img src={init.image_url} alt={init.title} className="w-full h-32 object-cover rounded-lg mb-3" />
-              )}
-              <h3 className="font-semibold text-cordia-dark mb-1">{init.label}</h3>
-              <p className="text-sm text-gray-600 line-clamp-2 mb-3">{init.description}</p>
-              <Button variant="outline" size="sm" onClick={() => openEdit(init)} className="w-full">
-                <Pencil className="w-4 h-4 mr-2" />
+          <Card key={init.slug} className="border border-slate-200/90 shadow-2xs hover:shadow-md transition-all">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div>
+                {init.image_url && (
+                  <div className="w-full h-32 overflow-hidden rounded-lg mb-3 bg-slate-100">
+                    <img src={init.image_url} alt={init.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/60">
+                    {init.display_order}번 • {init.category}
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-base mb-0.5">
+                  {init.title_ko || init.title}
+                </h3>
+                {init.title && init.title !== init.title_ko && (
+                  <p className="text-xs text-slate-400 font-medium mb-2">{init.title}</p>
+                )}
+                <p className="text-xs text-slate-600 line-clamp-2 mb-3.5 leading-relaxed">
+                  {init.description_ko || init.description}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => openEdit(init)} className="w-full text-xs font-semibold mt-auto">
+                <Pencil className="w-3.5 h-3.5 mr-1.5" />
                 수정
               </Button>
             </CardContent>
@@ -161,7 +177,7 @@ export default function AdminInitiativesTab() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>이니셔티브 수정: {editing?.label}</DialogTitle>
+            <DialogTitle>이니셔티브 수정: {editing?.title_ko || editing?.title || editing?.label}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="rounded-xl border border-gray-200 p-4 space-y-3">
