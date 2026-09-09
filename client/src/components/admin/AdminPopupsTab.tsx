@@ -175,7 +175,7 @@ export default function AdminPopupsTab() {
     const targetOppositeLang: PopupTargetLang = isKo ? "en" : "ko";
     const targetOppositeName = isKo ? "영어(ENG)" : "한국어(KOR)";
 
-    const confirmMsg = `현재 팝업 [${sourcePopup.title}]을 바탕으로\n[${targetOppositeName} 전용 팝업] 초안을 새로 생성하시겠습니까?\n\n• 제목/문구가 DeepL을 통해 번역 초안으로 자동 입력됩니다.\n• 위치/크기/게시기간/링크가 그대로 복제되어 화면 레이아웃이 통일됩니다.\n• 생성 후 ${targetOppositeName} 전용 포스터 이미지를 올려주시면 완성됩니다.`;
+    const confirmMsg = `현재 팝업 [${sourcePopup.title}]을 바탕으로\n[${targetOppositeName} 전용 팝업] 초안을 새로 생성하시겠습니까?\n\n• 제목/문구가 자동 번역되어 초안으로 입력됩니다.\n• 위치/크기/게시기간/링크가 그대로 복제되어 화면 레이아웃이 통일됩니다.\n• 생성 후 ${targetOppositeName} 전용 포스터 이미지를 올려주시면 완성됩니다.`;
     if (!window.confirm(confirmMsg)) return;
 
     setTranslatingId(sourcePopup.id);
@@ -189,7 +189,7 @@ export default function AdminPopupsTab() {
 
       const targetDeepLLang = targetOppositeLang === "ko" ? "KO" : "EN-US";
       if (textsToTranslate.length > 0) {
-        toast({ title: "DeepL 번역 중...", description: `${targetOppositeName}로 초안을 자동 생성합니다.` });
+        toast({ title: "번역 중...", description: `${targetOppositeName}로 초안을 자동 생성합니다.` });
         const translations = await translateTexts(textsToTranslate, targetDeepLLang);
         if (translations[0]) translatedTitle = translations[0];
         if (translations[1]) translatedContent = translations[1];
@@ -217,7 +217,7 @@ export default function AdminPopupsTab() {
     } catch (err: any) {
       toast({
         title: "자동 번역 실패",
-        description: err.message || "DeepL 번역 중 오류가 발생했습니다. 직접 입력해주세요.",
+        description: err.message || "번역 중 오류가 발생했습니다. 직접 입력해주세요.",
         variant: "destructive",
       });
     } finally {
@@ -254,7 +254,7 @@ export default function AdminPopupsTab() {
         content: newContent,
         targetLang: nextLang,
       }));
-      toast({ title: "DeepL 번역 완료", description: "문구가 번역되었으며 대상 언어가 전환되었습니다." });
+      toast({ title: "자동 번역 완료", description: "문구가 번역되었으며 대상 언어가 전환되었습니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
     } finally {
@@ -559,7 +559,7 @@ export default function AdminPopupsTab() {
                   ) : (
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                   )}
-                  <span>DeepL로 반대 언어 번역</span>
+                  <span>반대 언어로 자동 번역</span>
                 </button>
               </div>
               <Input

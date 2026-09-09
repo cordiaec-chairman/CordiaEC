@@ -426,12 +426,12 @@ export default function AdminPostsTab() {
       await saveMutation.mutateAsync(updatedForm);
       toast({
         title: "영문 자동 번역 및 저장 완료",
-        description: "DeepL을 통해 영문 제목·요약·본문이 자동 생성되어 함께 저장되었습니다.",
+        description: "영문 제목·요약·본문이 자동 생성되어 함께 저장되었습니다.",
       });
     } catch (err: any) {
       toast({
         title: "영문 자동 번역 실패",
-        description: (err.message || "DeepL 번역 중 오류가 발생했습니다.") + " 국문으로 우선 저장합니다.",
+        description: (err.message || "번역 중 오류가 발생했습니다.") + " 국문으로 우선 저장합니다.",
         variant: "destructive",
       });
       await saveMutation.mutateAsync(form);
@@ -1000,7 +1000,7 @@ export default function AdminPostsTab() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    <span>🇰🇷</span> 국문 작성
+                    국문 작성
                     {form.titleKo && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                   </button>
                   <button
@@ -1012,7 +1012,7 @@ export default function AdminPostsTab() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    <span>🇺🇸</span> 영문 (English) *
+                    영문 (English) *
                     {form.title && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                   </button>
                 </div>
@@ -1027,10 +1027,10 @@ export default function AdminPostsTab() {
                       className="border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 hover:text-blue-900 text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
                       onClick={handleTranslateKoToEn}
                       disabled={translating || !form.titleKo}
-                      title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역하여 완성합니다 (서식/사진 보존)"
+                      title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역합니다."
                     >
                       <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                      {translating ? "번역 중..." : "🇰🇷 국문 → 🇺🇸 영문 자동 번역"}
+                      {translating ? "번역 중..." : "국문 → 영문 자동 번역"}
                     </Button>
                   ) : (
                     <Button
@@ -1040,10 +1040,10 @@ export default function AdminPostsTab() {
                       className="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
                       onClick={handleTranslateEnToKo}
                       disabled={translating || !form.title}
-                      title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역하여 완성합니다 (서식/사진 보존)"
+                      title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역합니다."
                     >
                       <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                      {translating ? "번역 중..." : "🇺🇸 영문 → 🇰🇷 국문 자동 번역"}
+                      {translating ? "번역 중..." : "영문 → 국문 자동 번역"}
                     </Button>
                   )}
 
@@ -1361,7 +1361,7 @@ export default function AdminPostsTab() {
                 현재 <strong className="text-slate-900">국문 내용만 작성</strong>되어 있습니다. 글로벌 사이트 방문자를 위해 영문 번역본을 함께 생성하시겠습니까?
               </p>
               <p className="text-slate-400 text-[11px]">
-                DeepL을 통해 본문 서식과 이미지 배치를 그대로 보존하며 영문으로 자동 번역됩니다.
+                본문 서식과 이미지 배치를 보존하며 영문으로 자동 번역됩니다.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1375,7 +1375,7 @@ export default function AdminPostsTab() {
               disabled={translating || saveMutation.isPending}
             >
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              ⚡ DeepL 영문 자동 번역 후 저장
+              영문 자동 번역 후 저장
             </Button>
             <div className="flex items-center gap-2 w-full">
               <Button

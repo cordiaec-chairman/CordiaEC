@@ -132,8 +132,8 @@ export default function AdminGlossaryTab() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              기관명, 연구센터, 고유명사 등을 등록해두면 <strong>게시글·팝업·슬라이드 등 관리자 전역에서 DeepL 자동 번역 실행 시</strong>{" "}
-              번역기가 임의로 오역하지 않고 <strong>지정하신 공식 영문/국문 표기로 100% 정확하게 고정 치환</strong>됩니다.
+              기관명, 연구센터, 고유명사 등을 등록해두면 <strong>게시글·팝업·슬라이드 등 관리자 전역에서 자동 번역 실행 시</strong>{" "}
+              오역 없이 <strong>지정하신 공식 영문/국문 표기로 100% 정확하게 고정 치환</strong>됩니다.
             </p>
           </div>
         </CardContent>
@@ -309,7 +309,7 @@ export default function AdminGlossaryTab() {
             <AlertDialogTitle>고정 용어 삭제</AlertDialogTitle>
             <AlertDialogDescription>
               <strong>"{deleteTarget?.ko}" ↔ "{deleteTarget?.en}"</strong> 항목을 사전에서 삭제하시겠습니까?
-              삭제 후에는 번역 시 DeepL 일반 번역으로 처리됩니다.
+              삭제 후에는 번역 시 일반 자동 번역으로 처리됩니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
