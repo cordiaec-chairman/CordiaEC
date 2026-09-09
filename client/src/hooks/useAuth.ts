@@ -8,6 +8,20 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (import.meta.env.DEV && typeof window !== "undefined" && sessionStorage.getItem("dev_mock_admin") === "true") {
+      const mockUser = {
+        id: "dev-admin-id",
+        email: "k-academy@inha.ac.kr",
+        user_metadata: { auto_translate: false },
+        app_metadata: {},
+        aud: "authenticated",
+        created_at: new Date().toISOString(),
+      } as unknown as User;
+      setUser(mockUser);
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
