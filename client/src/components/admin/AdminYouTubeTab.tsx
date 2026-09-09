@@ -70,11 +70,20 @@ export default function AdminYouTubeTab() {
       setFormOpen(false);
     },
     onError: (err: any) => {
-      toast({
-        title: "등록 실패",
-        description: err.message || "영상 등록 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
+      const msg = err.message || "";
+      if (msg.includes("does not exist") || msg.includes("youtube_videos") || msg.includes("42P01")) {
+        toast({
+          title: "DB 테이블 생성 필요",
+          description: "Supabase SQL Editor에서 'supabase/patch_2026_09_youtube_videos.sql'을 실행해 주세요.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "등록 실패",
+          description: msg || "영상 등록 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -88,16 +97,32 @@ export default function AdminYouTubeTab() {
       setFormOpen(false);
     },
     onError: (err: any) => {
-      toast({
-        title: "수정 실패",
-        description: err.message || "영상 수정 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
+      const msg = err.message || "";
+      if (msg.includes("does not exist") || msg.includes("youtube_videos") || msg.includes("42P01")) {
+        toast({
+          title: "DB 테이블 생성 필요",
+          description: "Supabase SQL Editor에서 'supabase/patch_2026_09_youtube_videos.sql'을 실행해 주세요.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "수정 실패",
+          description: msg || "영상 수정 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteYoutubeVideo,
+    mutationFn: async (id: string) => {
+      if (id.startsWith("yt-seed-")) {
+        // 시드 데이터는 DB에 테이블이 없거나 초기 데이터일 때 보여주는 임시 데이터
+        // 실제 DB 테이블 생성 안내
+        throw new Error("초기 시드 데이터는 Supabase DB에 'youtube_videos' 테이블 생성 후 실제 등록된 영상으로 삭제·관리하실 수 있습니다.");
+      }
+      return deleteYoutubeVideo(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_youtube_videos"] });
       queryClient.invalidateQueries({ queryKey: ["youtube_videos"] });
@@ -105,11 +130,20 @@ export default function AdminYouTubeTab() {
       setDeleteTargetId(null);
     },
     onError: (err: any) => {
-      toast({
-        title: "삭제 실패",
-        description: err.message || "영상 삭제 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
+      const msg = err.message || "";
+      if (msg.includes("does not exist") || msg.includes("youtube_videos") || msg.includes("42P01")) {
+        toast({
+          title: "DB 테이블 생성 필요",
+          description: "Supabase SQL Editor에서 'supabase/patch_2026_09_youtube_videos.sql'을 실행해 주세요.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "삭제 실패",
+          description: msg || "영상 삭제 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -205,6 +239,22 @@ export default function AdminYouTubeTab() {
           <Plus className="w-4 h-4 mr-1.5" /> 영상 등록
         </Button>
       </div>
+
+      {/* Seed fallback notice if DB table not yet created */}
+      {videos.some((v) => v.id.startsWith("yt-seed-")) && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+          <span className="shrink-0 text-base">⚠️</span>
+          <div className="space-y-1">
+            <p className="font-bold text-amber-900">
+              Supabase DB에 <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[11px]">youtube_videos</code> 테이블 생성이 필요합니다.
+            </p>
+            <p className="text-amber-700 leading-relaxed">
+              현재는 화면 구성을 위해 기본 시드 영상 3종이 임시로 표시되고 있습니다.
+              Supabase 대시보드의 <strong>SQL Editor</strong>에서 프로젝트 내 <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[11px]">supabase/patch_2026_09_youtube_videos.sql</code> 쿼리를 실행해 주시면 실제 DB 영상 추가/수정/삭제가 완전히 활성화됩니다.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Videos List */}
       {isLoading ? (
