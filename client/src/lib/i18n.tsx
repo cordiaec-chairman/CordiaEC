@@ -81,6 +81,10 @@ const STRINGS: Record<string, { en: string; ko: string }> = {
   "common.downloadPdf": { en: "Download PDF", ko: "PDF 다운로드" },
   "common.notFound": { en: "Post not found.", ko: "게시글을 찾을 수 없습니다." },
   // Home
+  "home.badgeMediaHub": {
+    en: "From Research Institute to Global Knowledge Media Hub",
+    ko: "From Research Institute to Global Knowledge Media Hub",
+  },
   "home.aboutTitle": { en: "About CordiaEC", ko: "CordiaEC 소개" },
   "home.aboutDesc": {
     en: "Cordia is a global hub rooted in Korean Studies, connecting knowledge and people across borders. We create trusted networks and opportunities that deepen understanding of Korea worldwide.",
@@ -96,10 +100,13 @@ const STRINGS: Record<string, { en: string; ko: string }> = {
   "home.feature3Title": { en: "Collaborative Opportunities", ko: "협력의 기회" },
   "home.feature3Desc": { en: "Creating spaces for global partnerships", ko: "글로벌 파트너십의 장 마련" },
   "home.learnMoreAbout": { en: "Learn More About Us", ko: "더 알아보기" },
-  "home.initiativesTitle": { en: "Our Initiatives", ko: "주요 이니셔티브 & 활동 영역" },
+  "home.initiativesTitle": {
+    en: "From Knowledge Production to Knowledge Connection",
+    ko: "From Knowledge Production to Knowledge Connection",
+  },
   "home.initiativesDesc": {
-    en: "Cordia drives collaboration across Korean business, culture, and education. From K-Food and K-Beauty to startups and venture capital, we create trusted bridges that connect global partners and unlock new opportunities.",
-    ko: "Cordia는 한국의 비즈니스·문화·교육 전반의 협력을 이끕니다. K-Food와 K-Beauty부터 스타트업, 벤처캐피털까지, 글로벌 파트너를 연결하는 신뢰의 다리를 만듭니다.",
+    en: "Cordia is a knowledge platform connecting Koreans around the world. We give meaning to previously unconnected knowledge, bridging people with people, policy with market, and culture with economy.",
+    ko: "Cordia는 세계의 한인을 연결하는 지식 플랫폼이다. 서로 연결되지 않았던 지식에 의미를 부여하고, 사람과 사람, 정책과 시장, 문화와 경제를 연결한다.",
   },
   "home.newsDesc": {
     en: "Stay updated with the latest developments, announcements, and insights from CordiaEC.",

@@ -61,7 +61,7 @@ export default function Home() {
             {/* 좌측: 스토리텔링 본문 */}
             <div className="lg:col-span-7">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-semibold uppercase tracking-wider mb-3.5">
-                Global Knowledge Hub
+                {t("home.badgeMediaHub")}
               </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4 leading-snug">
                 {t("home.aboutTitle")}
