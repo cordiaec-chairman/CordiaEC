@@ -1295,7 +1295,7 @@ export default function AdminPostsTab() {
                 </span>
                 <span>
                   {activeLangTab === "ko" && !form.title && (
-                    <span className="text-amber-600 font-medium">⚠️ 저장 전 상단의 [국문 → 영문 자동 번역] 또는 직접 영문 작성이 필요합니다.</span>
+                    <span className="text-amber-600 font-medium">⚠️ 저장 전 상단의 [자동 번역] 또는 직접 영문 작성이 필요합니다.</span>
                   )}
                 </span>
               </div>

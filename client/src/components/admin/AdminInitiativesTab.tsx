@@ -204,7 +204,7 @@ export default function AdminInitiativesTab() {
                 disabled={translating}
               >
                 <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                {translating ? "번역 중..." : "🇰🇷 국문 → 🇺🇸 영문 번역"}
+                {translating ? "번역 중..." : "자동 번역"}
               </Button>
               <Button
                 type="button"
@@ -214,7 +214,7 @@ export default function AdminInitiativesTab() {
                 disabled={translating}
               >
                 <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                {translating ? "번역 중..." : "🇺🇸 영문 → 🇰🇷 국문 번역"}
+                {translating ? "번역 중..." : "자동 번역"}
               </Button>
             </div>
             <div>
