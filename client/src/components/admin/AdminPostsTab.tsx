@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -127,23 +129,44 @@ export default function AdminPostsTab() {
   const [form, setForm] = useState(defaultForm);
   const [translating, setTranslating] = useState(false);
 
-  // 영문 자동 번역 토글 상태 (로컬 스토리지에 기억)
-  const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const saved = localStorage.getItem("cordia_admin_auto_translate_posts");
-      return saved === "true";
-    } catch {
-      return false;
-    }
-  });
+  const { user } = useAuth();
+  const userKey = user?.id || user?.email || "default";
 
-  const toggleAutoTranslate = (val: boolean) => {
+  // 영문 자동 번역 토글 상태 (작성자 계정별로 독립 저장 및 유지)
+  const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    try {
+      // 1. 작성자(관리자 계정)의 Supabase user_metadata 우선 확인
+      const metaVal = user.user_metadata?.auto_translate;
+      if (typeof metaVal === "boolean") {
+        setAutoTranslateEnabled(metaVal);
+        localStorage.setItem(`cordia_admin_auto_translate_${userKey}`, String(metaVal));
+        return;
+      }
+      // 2. 브라우저 localStorage의 작성자별 설정 확인
+      const saved = localStorage.getItem(`cordia_admin_auto_translate_${userKey}`);
+      if (saved !== null) {
+        setAutoTranslateEnabled(saved === "true");
+      }
+    } catch {
+      // ignore
+    }
+  }, [user, userKey]);
+
+  const toggleAutoTranslate = async (val: boolean) => {
     setAutoTranslateEnabled(val);
     try {
-      localStorage.setItem("cordia_admin_auto_translate_posts", String(val));
-    } catch {
-      // Ignore
+      localStorage.setItem(`cordia_admin_auto_translate_${userKey}`, String(val));
+      if (user) {
+        // 현재 로그인한 작성자 계정에 영구 저장
+        await supabase.auth.updateUser({
+          data: { auto_translate: val },
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to persist author auto-translate setting:", e);
     }
   };
 
@@ -168,6 +191,7 @@ export default function AdminPostsTab() {
   }
   const [floatingPopover, setFloatingPopover] = useState<FloatingPopoverState | null>(null);
   const [savingGlossary, setSavingGlossary] = useState(false);
+  const dialogContentRef = useRef<HTMLDivElement | null>(null);
 
   // 용어 수정 시 다른 게시글 일괄 변경 확인 모달 상태
   interface BatchConfirmState {
@@ -205,9 +229,18 @@ export default function AdminPostsTab() {
     );
 
     const popoverWidth = 340;
-    const popoverHeight = 240;
-    const x = Math.min(window.innerWidth - popoverWidth - 16, Math.max(16, e.clientX - 20));
-    const y = Math.min(window.innerHeight - popoverHeight - 16, Math.max(16, e.clientY - 20));
+    const popoverHeight = 250;
+
+    // 모달(dialogContentRef) 내부 상대 좌표 계산
+    const dialogRect = dialogContentRef.current?.getBoundingClientRect();
+    const offsetX = dialogRect ? e.clientX - dialogRect.left : e.clientX;
+    const offsetY = dialogRect ? e.clientY - dialogRect.top : e.clientY;
+
+    const maxX = (dialogRect?.width ?? window.innerWidth) - popoverWidth - 16;
+    const maxY = (dialogRect?.height ?? window.innerHeight) - popoverHeight - 16;
+
+    const x = Math.min(maxX, Math.max(16, offsetX + 6));
+    const y = Math.min(maxY, Math.max(16, offsetY + 6));
 
     setFloatingPopover({
       open: true,
@@ -1038,8 +1071,17 @@ export default function AdminPostsTab() {
       )}
 
       {/* Form Dialog - Full-Width Rich Posting Studio */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-5xl w-[96vw] max-h-[94vh] flex flex-col p-0 overflow-hidden bg-white shadow-2xl rounded-2xl border border-slate-200">
+      <Dialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) setFloatingPopover(null);
+        }}
+      >
+        <DialogContent
+          ref={dialogContentRef}
+          className="max-w-5xl w-[96vw] max-h-[94vh] flex flex-col p-0 overflow-hidden bg-white shadow-2xl rounded-2xl border border-slate-200 relative"
+        >
           {/* Header */}
           <DialogHeader className="px-6 py-3.5 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/70">
             <div className="flex items-center gap-3">
@@ -1601,6 +1643,132 @@ export default function AdminPostsTab() {
               </Button>
             </div>
           </DialogFooter>
+
+          {/* 플로팅 용어 팝오버 (단어 드래그 후 마우스 우클릭 시 모달 내부 커서 위치에 출현) */}
+          {floatingPopover && (
+            <>
+              {/* 모달 내부 바깥 클릭 시 팝오버만 닫히는 오버레이 */}
+              <div
+                className="absolute inset-0 z-[60] bg-transparent"
+                onClick={() => setFloatingPopover(null)}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: `${floatingPopover.x}px`,
+                  top: `${floatingPopover.y}px`,
+                  zIndex: 70,
+                }}
+                className="w-[340px] bg-white p-3.5 rounded-2xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 space-y-2.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="text-xs font-bold text-slate-800">
+                      {floatingPopover.matched ? "등록된 고정 용어 (수정 가능)" : "새 고정 용어 등록"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFloatingPopover(null)}
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-500 block mb-0.5">국문 표기</span>
+                    <Input
+                      value={floatingPopover.ko}
+                      onChange={(e) => setFloatingPopover({ ...floatingPopover, ko: e.target.value })}
+                      placeholder="국문 표기"
+                      className="h-8 text-xs rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-500 block mb-0.5">공식 영문 표기</span>
+                    <Input
+                      value={floatingPopover.en}
+                      onChange={(e) => setFloatingPopover({ ...floatingPopover, en: e.target.value })}
+                      placeholder="공식 영문 표기"
+                      className="h-8 text-xs rounded-lg"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          floatingPopover.matched ? handleUpdateGlossaryTerm(false) : handleAddGlossaryTerm(false);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
+                  {floatingPopover.matched ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleDeleteGlossaryTerm}
+                        disabled={savingGlossary}
+                        className="text-[11px] text-red-500 hover:text-red-700 underline font-medium"
+                      >
+                        삭제
+                      </button>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          type="button"
+                          onClick={() => handleUpdateGlossaryTerm(false)}
+                          disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en}
+                          className="h-7 text-xs px-2.5 rounded-lg border-slate-300 hover:bg-slate-50"
+                        >
+                          {savingGlossary ? "저장 중..." : "수정"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => handleUpdateGlossaryTerm(true)}
+                          disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en || translating}
+                          className="h-7 text-xs bg-[#0f2445] hover:bg-[#1a3a60] text-white px-2.5 rounded-lg flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3 h-3 text-blue-300" />
+                          수정 후 바로 번역
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[10px] text-slate-400">번역 시 고정 치환</span>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          type="button"
+                          onClick={() => handleAddGlossaryTerm(false)}
+                          disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en}
+                          className="h-7 text-xs px-2.5 rounded-lg border-slate-300 hover:bg-slate-50"
+                        >
+                          {savingGlossary ? "등록 중..." : "등록"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => handleAddGlossaryTerm(true)}
+                          disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en || translating}
+                          className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 rounded-lg flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3 h-3 text-blue-200" />
+                          등록 후 바로 번역
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1681,132 +1849,6 @@ export default function AdminPostsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* 플로팅 용어 팝오버 (단어 드래그 후 마우스 우클릭 시 커서 위치에 출현) */}
-      {floatingPopover && (
-        <>
-          {/* 바깥 클릭 시 닫히는 투명 오버레이 */}
-          <div
-            className="fixed inset-0 z-[9998]"
-            onClick={() => setFloatingPopover(null)}
-          />
-          <div
-            style={{
-              position: "fixed",
-              left: `${floatingPopover.x}px`,
-              top: `${floatingPopover.y}px`,
-              zIndex: 9999,
-            }}
-            className="w-[340px] bg-white p-3.5 rounded-2xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 space-y-2.5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-              <div className="flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-                <span className="text-xs font-bold text-slate-800">
-                  {floatingPopover.matched ? "등록된 고정 용어 (수정 가능)" : "새 고정 용어 등록"}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setFloatingPopover(null)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div>
-                <span className="text-[10px] font-semibold text-slate-500 block mb-0.5">국문 표기</span>
-                <Input
-                  value={floatingPopover.ko}
-                  onChange={(e) => setFloatingPopover({ ...floatingPopover, ko: e.target.value })}
-                  placeholder="국문 표기"
-                  className="h-8 text-xs rounded-lg"
-                />
-              </div>
-              <div>
-                <span className="text-[10px] font-semibold text-slate-500 block mb-0.5">공식 영문 표기</span>
-                <Input
-                  value={floatingPopover.en}
-                  onChange={(e) => setFloatingPopover({ ...floatingPopover, en: e.target.value })}
-                  placeholder="공식 영문 표기"
-                  className="h-8 text-xs rounded-lg"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      floatingPopover.matched ? handleUpdateGlossaryTerm(false) : handleAddGlossaryTerm(false);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
-              {floatingPopover.matched ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleDeleteGlossaryTerm}
-                    disabled={savingGlossary}
-                    className="text-[11px] text-red-500 hover:text-red-700 underline font-medium"
-                  >
-                    삭제
-                  </button>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleUpdateGlossaryTerm(false)}
-                      disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en}
-                      className="h-7 text-xs px-2.5 rounded-lg border-slate-300 hover:bg-slate-50"
-                    >
-                      {savingGlossary ? "저장 중..." : "수정"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      type="button"
-                      onClick={() => handleUpdateGlossaryTerm(true)}
-                      disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en || translating}
-                      className="h-7 text-xs bg-[#0f2445] hover:bg-[#1a3a60] text-white px-2.5 rounded-lg flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3 text-blue-300" />
-                      수정 후 바로 번역
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span className="text-[10px] text-slate-400">번역 시 고정 치환</span>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleAddGlossaryTerm(false)}
-                      disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en}
-                      className="h-7 text-xs px-2.5 rounded-lg border-slate-300 hover:bg-slate-50"
-                    >
-                      {savingGlossary ? "등록 중..." : "등록"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      type="button"
-                      onClick={() => handleAddGlossaryTerm(true)}
-                      disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en || translating}
-                      className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 rounded-lg flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3 text-blue-200" />
-                      등록 후 바로 번역
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* 용어 수정 시 다른 게시글 일괄 변경 확인 모달 */}
       <AlertDialog open={Boolean(batchConfirm)} onOpenChange={(open) => !open && setBatchConfirm(null)}>
