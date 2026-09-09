@@ -978,11 +978,15 @@ export default function AdminPostsTab() {
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (
-            <Card key={post.id} className="border border-gray-100">
+            <Card
+              key={post.id}
+              onClick={() => openEdit(post)}
+              className="border border-gray-100 hover:border-slate-300 hover:shadow-md cursor-pointer transition-all duration-150 group"
+            >
               <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {post.image_url && (
-                    <img src={post.image_url} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+                    <img src={post.image_url} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0 group-hover:opacity-95" />
                   )}
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5 min-w-0">
@@ -1008,7 +1012,7 @@ export default function AdminPostsTab() {
                           홈 고정
                         </Badge>
                       )}
-                      <p className="font-semibold text-cordia-dark truncate">
+                      <p className="font-semibold text-cordia-dark group-hover:text-blue-700 transition-colors truncate">
                         {post.title_ko || post.title}
                       </p>
                       {post.title_ko && post.title && post.title_ko !== post.title && (
@@ -1031,15 +1035,27 @@ export default function AdminPostsTab() {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(post)}>
+                <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(post);
+                    }}
+                    title="게시글 수정"
+                  >
                     <Pencil className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-500 hover:text-red-600"
-                    onClick={() => setDeleteTarget(post.id)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(post.id);
+                    }}
+                    title="게시글 삭제"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -1080,7 +1096,7 @@ export default function AdminPostsTab() {
       >
         <DialogContent
           ref={dialogContentRef}
-          className="max-w-5xl w-[96vw] max-h-[94vh] flex flex-col p-0 overflow-hidden bg-white shadow-2xl rounded-2xl border border-slate-200 relative"
+          className="max-w-5xl w-[96vw] max-h-[94vh] flex flex-col p-0 overflow-hidden bg-white shadow-2xl rounded-2xl border border-slate-200"
         >
           {/* Header */}
           <DialogHeader className="px-6 py-3.5 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/70">
