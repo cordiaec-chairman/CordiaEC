@@ -11,6 +11,7 @@ import { useLang, useT, pickField } from "@/lib/i18n";
 import type { Initiative, Post } from "@/lib/database.types";
 import NewsModal from "@/components/modals/NewsModal";
 import PartnerBanner from "@/components/PartnerBanner";
+import YouTubeShowcase from "@/components/YouTubeShowcase";
 
 export default function Home() {
   const { lang } = useLang();
@@ -156,31 +157,28 @@ export default function Home() {
           </div>
 
           {/* 1 Row x 6 Columns Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4 mb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-10">
             {initiatives.map((init: Initiative) => {
-              const title = pickField(init, "title", lang);
+              const label = init.label || pickField(init, "title", lang);
               return (
                 <Link
                   key={init.slug}
                   href={`/initiatives/${init.slug}`}
-                  className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-200/85 shadow-2xs hover:shadow-lg hover:border-slate-300 transition-all duration-300 text-center"
+                  className="group flex flex-col items-center text-center"
                 >
-                  {/* Square Image with Zoom effect */}
-                  <div className="aspect-square w-full overflow-hidden bg-slate-100 relative">
+                  {/* Square Image with subtle hover zoom */}
+                  <div className="aspect-square w-full mb-2 rounded-xl overflow-hidden bg-slate-100 relative shadow-xs group-hover:shadow-md border border-slate-200/70 transition-all duration-300">
                     <img
                       src={init.image_url || ""}
-                      alt={title}
-                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                      alt={label}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
 
-                  {/* Balanced 2-Line Title Container */}
-                  <div className="p-3 sm:p-3.5 flex-1 flex items-center justify-center min-h-[58px] sm:min-h-[62px] bg-white">
-                    <h3 className="text-xs sm:text-[13px] font-bold text-slate-800 group-hover:text-teal-700 transition-colors leading-[1.35] tracking-tight break-keep text-center">
-                      {title}
-                    </h3>
-                  </div>
+                  {/* Clean Label */}
+                  <h3 className="text-xs sm:text-[13px] font-semibold text-slate-800 group-hover:text-teal-700 transition-colors leading-snug tracking-tight break-keep px-1">
+                    {label}
+                  </h3>
                 </Link>
               );
             })}
@@ -198,7 +196,10 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+ 
+      {/* 3.5 YouTube Video Showcase */}
+      <YouTubeShowcase />
+ 
       {/* 4. Latest News & Industry Reports 2-Column Split */}
       <section className="py-14 sm:py-20 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">

@@ -95,6 +95,20 @@ export interface Popup {
   target_lang?: PopupTargetLang;
 }
 
+export interface YouTubeVideo {
+  id: string;
+  youtube_url: string;
+  video_id: string;
+  title: string;
+  title_ko: string | null;
+  summary: string | null;
+  summary_ko: string | null;
+  published_date: string;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 // supabase-js가 요구하는 Database 제네릭 타입
 export type Database = {
   public: {
@@ -108,6 +122,11 @@ export type Database = {
         Row: Post;
         Insert: Omit<Post, "id" | "created_at">;
         Update: Partial<Omit<Post, "id" | "created_at">>;
+      };
+      youtube_videos: {
+        Row: YouTubeVideo;
+        Insert: Omit<YouTubeVideo, "id" | "created_at">;
+        Update: Partial<Omit<YouTubeVideo, "id" | "created_at">>;
       };
       milestones: {
         Row: Milestone;

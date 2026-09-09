@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
-import type { Initiative, Post, Milestone, Contact, HeroSlide, Popup, Partner } from "./database.types";
+import type { Initiative, Post, Milestone, Contact, HeroSlide, Popup, Partner, YouTubeVideo } from "./database.types";
 
 // 기본 폴백 가데이터 제거 (오직 Supabase DB의 실제 데이터만 단일 진실 공급원으로 사용)
 export const DEFAULT_INITIATIVES: Initiative[] = [];
@@ -65,10 +65,12 @@ export async function getPosts(opts: {
   limit?: number;
   initiativeSlug?: string;
   search?: string;
+  includeScheduled?: boolean;  // true면 미래 예약발행 글도 포함 (관리자 전용)
 }): Promise<{ posts: Post[]; total: number }> {
-  const { board, page = 1, limit = 10, initiativeSlug, search } = opts;
+  const { board, page = 1, limit = 10, initiativeSlug, search, includeScheduled = false } = opts;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
+  const todayStr = new Date().toISOString().split("T")[0];
 
   try {
     let query = supabase
@@ -76,6 +78,11 @@ export async function getPosts(opts: {
       .select("*", { count: "exact" })
       .order("published_date", { ascending: false })
       .range(from, to);
+
+    // 일반 방문자에게는 미래 발행일자(예약글) 숨김
+    if (!includeScheduled) {
+      query = query.lte("published_date", todayStr);
+    }
 
     if (board) query = query.eq("board", board);
     if (initiativeSlug) query = query.eq("initiative_slug", initiativeSlug);
@@ -120,11 +127,13 @@ export async function getPost(id: string): Promise<Post | null> {
 }
 
 export async function getHomePosts(count: number): Promise<Post[]> {
+  const todayStr = new Date().toISOString().split("T")[0];
   try {
     const { data, error } = await supabase
       .from("posts")
       .select("*")
       .eq("board", "news")
+      .lte("published_date", todayStr)
       .order("is_pinned_home", { ascending: false })
       .order("published_date", { ascending: false })
       .limit(count);
@@ -140,11 +149,13 @@ export async function getHomePosts(count: number): Promise<Post[]> {
 }
 
 export async function getHomeReports(count: number): Promise<Post[]> {
+  const todayStr = new Date().toISOString().split("T")[0];
   try {
     const { data, error } = await supabase
       .from("posts")
       .select("*")
       .eq("board", "reports")
+      .lte("published_date", todayStr)
       .order("published_date", { ascending: false })
       .limit(count);
     if (error) {
@@ -890,4 +901,122 @@ export async function deletePdf(url: string): Promise<void> {
   if (!path) return;
   await supabase.storage.from("report-files").remove([path]);
 }
+
+// ============================================================
+// 유튜브 영상 쇼케이스
+// ============================================================
+export function extractYouTubeVideoId(url: string): string | null {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
+  );
+  return match ? match[1] : null;
+}
+
+export const DEFAULT_YOUTUBE_VIDEOS: YouTubeVideo[] = [
+  {
+    id: "yt-seed-1",
+    youtube_url: "https://www.youtube.com/watch?v=7bA0gX_Qy9M",
+    video_id: "7bA0gX_Qy9M",
+    title: "Global Korean Diaspora Network: Connecting Past, Present, and Future",
+    title_ko: "글로벌 한인 디아스포라 네트워크: 과거와 현재, 미래를 잇다",
+    summary:
+      "Exploring the vibrant history and global potential of Korean communities worldwide, from Central Asia to the Americas.",
+    summary_ko:
+      "중앙아시아부터 미주까지, 전 세계 한인 공동체의 역동적인 역사와 글로벌 지식 네트워크로서의 미래 잠재력을 조망합니다.",
+    published_date: new Date().toISOString().split("T")[0],
+    display_order: 1,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "yt-seed-2",
+    youtube_url: "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+    video_id: "kJQP7kiw5Fk",
+    title: "K-Economy & Global Supply Chains in the Age of AI",
+    title_ko: "AI 대전환 시대, K-이코노미와 글로벌 공급망의 전략적 재편",
+    summary:
+      "In-depth analysis of semiconductor, bio, and cultural industries through the lens of international diaspora partnerships.",
+    summary_ko:
+      "반도체, 바이오, K-컬처 산업의 글로벌 진출과 재외 한인 비즈니스 네트워크 간의 시너지 전략을 심층 분석합니다.",
+    published_date: new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0],
+    display_order: 2,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "yt-seed-3",
+    youtube_url: "https://www.youtube.com/watch?v=fJ9rUzIMcZQ",
+    video_id: "fJ9rUzIMcZQ",
+    title: "Diaspora Identity and Next-Generation Leadership",
+    title_ko: "차세대 재외동포 리더십과 문화적 정체성",
+    summary:
+      "Empowering the next generation of global Koreans to lead across cultural, academic, and business landscapes.",
+    summary_ko:
+      "글로벌 사회를 이끌어갈 차세대 한인 리더들의 정체성 확립과 모국과의 상생 협력 방안을 논의합니다.",
+    published_date: new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0],
+    display_order: 3,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+];
+
+export async function getYoutubeVideos(includeInactive = false): Promise<YouTubeVideo[]> {
+  try {
+    let query = supabase
+      .from("youtube_videos")
+      .select("*")
+      .order("display_order", { ascending: true })
+      .order("published_date", { ascending: false });
+
+    if (!includeInactive) {
+      query = query.eq("is_active", true);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn("youtube_videos query error (using default fallback):", error.message);
+      return DEFAULT_YOUTUBE_VIDEOS;
+    }
+    if (!data || data.length === 0) {
+      return DEFAULT_YOUTUBE_VIDEOS;
+    }
+    return data as YouTubeVideo[];
+  } catch (err) {
+    console.error("youtube_videos fetch exception:", err);
+    return DEFAULT_YOUTUBE_VIDEOS;
+  }
+}
+
+export async function createYoutubeVideo(
+  video: Omit<YouTubeVideo, "id" | "created_at">
+): Promise<YouTubeVideo> {
+  const { data, error } = await supabase
+    .from("youtube_videos")
+    .insert(video)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as YouTubeVideo;
+}
+
+export async function updateYoutubeVideo(
+  id: string,
+  updates: Partial<Omit<YouTubeVideo, "id" | "created_at">>
+): Promise<YouTubeVideo> {
+  const { data, error } = await supabase
+    .from("youtube_videos")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as YouTubeVideo;
+}
+
+export async function deleteYoutubeVideo(id: string): Promise<void> {
+  const { error } = await supabase.from("youtube_videos").delete().eq("id", id);
+  if (error) throw error;
+}
+
 

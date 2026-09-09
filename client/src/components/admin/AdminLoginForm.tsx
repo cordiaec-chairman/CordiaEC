@@ -103,10 +103,11 @@ export default function AdminLoginForm() {
               <Button
                 type="submit"
                 disabled={loading || !email || !password}
-                className="w-full bg-[#e14a26] hover:bg-[#c93d1c] text-white font-bold"
+                className="w-full bg-[#0f2445] hover:bg-[#1a3a60] text-white font-bold h-11 rounded-xl"
               >
                 {loading ? "로그인 중..." : "로그인"}
               </Button>
+
             </form>
           </CardContent>
         </Card>

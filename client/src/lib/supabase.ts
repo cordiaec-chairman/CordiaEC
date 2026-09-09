@@ -13,7 +13,6 @@ export const isSupabaseConfigured = Boolean(
 // 브라우저 닫을 시 세션 즉시 만료 (sessionStorage 적용) 및 기존 localStorage 잔여 토큰 소각
 if (typeof window !== "undefined") {
   try {
-    localStorage.removeItem("test_admin_auth");
     Object.keys(localStorage).forEach((k) => {
       if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
         localStorage.removeItem(k);

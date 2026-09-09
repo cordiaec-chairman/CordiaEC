@@ -63,6 +63,7 @@ import {
   X,
   Sparkles,
   BookOpen,
+  Clock,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -128,6 +129,7 @@ export default function AdminPostsTab() {
   };
   const [form, setForm] = useState(defaultForm);
   const [translating, setTranslating] = useState(false);
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const { user } = useAuth();
   const userKey = user?.id || user?.email || "default";
@@ -490,6 +492,81 @@ export default function AdminPostsTab() {
     }
   };
 
+  const handlePasteImage = async (
+    e: React.ClipboardEvent<HTMLTextAreaElement>,
+    lang: "ko" | "en"
+  ) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+
+        if (file.size > 15 * 1024 * 1024) {
+          toast({
+            title: "파일 크기 초과",
+            description: "이미지는 15MB 이하여야 합니다.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "이미지 자동 업로드 중",
+          description: "클립보드 이미지를 1600px WebP로 최적화하여 업로드하고 있습니다...",
+        });
+
+        setUploadingInlineImage(true);
+        try {
+          const url = await uploadImage(file);
+          const isKo = lang === "ko";
+          const altText = file.name ? file.name.replace(/\.[^/.]+$/, "") : "본문 이미지";
+          const imageMarkdown = `\n\n![${altText}](${url})\n\n`;
+
+          const textarea = isKo ? contentKoRef.current : contentEnRef.current;
+          const currentVal = isKo ? form.contentKo : form.content;
+
+          if (textarea) {
+            const start = textarea.selectionStart ?? 0;
+            const end = textarea.selectionEnd ?? 0;
+            const newVal = currentVal.substring(0, start) + imageMarkdown + currentVal.substring(end);
+            setForm((f) => (isKo ? { ...f, contentKo: newVal } : { ...f, content: newVal }));
+
+            setTimeout(() => {
+              textarea.focus();
+              const cursor = start + imageMarkdown.length;
+              textarea.setSelectionRange(cursor, cursor);
+            }, 50);
+          } else {
+            setForm((f) =>
+              isKo
+                ? { ...f, contentKo: (f.contentKo || "") + imageMarkdown }
+                : { ...f, content: (f.content || "") + imageMarkdown }
+            );
+          }
+
+          toast({
+            title: "본문 이미지 삽입 완료",
+            description: "붙여넣은 이미지가 본문 커서 위치에 즉시 삽입되었습니다.",
+          });
+        } catch (err: any) {
+          toast({
+            title: "이미지 삽입 실패",
+            description: err.message,
+            variant: "destructive",
+          });
+        } finally {
+          setUploadingInlineImage(false);
+        }
+        break;
+      }
+    }
+  };
+
   const handleTranslateKoToEn = async () => {
     const sources = [form.titleKo, form.excerptKo, form.contentKo];
     if (!sources.some((t) => t.trim())) {
@@ -558,6 +635,7 @@ export default function AdminPostsTab() {
         page,
         limit,
         search: searchQuery || undefined,
+        includeScheduled: true,
       }),
   });
 
@@ -1012,6 +1090,15 @@ export default function AdminPostsTab() {
                           홈 고정
                         </Badge>
                       )}
+                      {post.published_date && post.published_date.slice(0, 10) > todayStr && (
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 text-[11px] bg-slate-100 text-slate-700 font-medium border-slate-300 flex items-center gap-1"
+                        >
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          예약 ({post.published_date.slice(0, 10)})
+                        </Badge>
+                      )}
                       <p className="font-semibold text-cordia-dark group-hover:text-blue-700 transition-colors truncate">
                         {post.title_ko || post.title}
                       </p>
@@ -1096,11 +1183,11 @@ export default function AdminPostsTab() {
       >
         <DialogContent
           ref={dialogContentRef}
-          className="max-w-5xl w-[96vw] max-h-[94vh] flex flex-col p-0 overflow-hidden bg-white shadow-2xl rounded-2xl border border-slate-200"
+          className="max-w-[96vw] w-[96vw] h-[92vh] max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white shadow-2xl rounded-2xl border border-slate-200"
         >
           {/* Header */}
-          <DialogHeader className="px-6 py-3.5 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/70">
-            <div className="flex items-center gap-3">
+          <DialogHeader className="px-6 py-3 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/70 shrink-0">
+            <div className="flex items-center gap-2.5">
               <DialogTitle className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                 {editing ? "게시글 수정" : "새 글 포스팅"}
               </DialogTitle>
@@ -1118,373 +1205,93 @@ export default function AdminPostsTab() {
               </Badge>
             </div>
 
-            {/* 상단 설정 접기/펼치기 토글 버튼 */}
-            <button
-              type="button"
-              onClick={() => setShowSettings(!showSettings)}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-2xs mr-8"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span>{showSettings ? "게시/파일 설정 접기" : "게시/파일 설정 펼치기"}</span>
-              {showSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          </DialogHeader>
-
-          {/* Dialog Scrollable Body */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 bg-slate-50/30">
-            {/* 1. 상단 100% 폭: 게시 기본 설정 & 미디어 첨부 영역 (Collapsible) */}
-            {showSettings && (
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4 animate-in fade-in-50 duration-200">
-                {/* 1행: 게시판, 이니셔티브, 발행일, 외부링크 (4열 그리드) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 block">게시판 구분 *</Label>
-                    <Select
-                      value={form.board}
-                      onValueChange={(v: "news" | "diaspora" | "reports") => setForm({ ...form, board: v })}
-                    >
-                      <SelectTrigger className="h-9 text-xs rounded-lg bg-slate-50/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="news">뉴스 & 공지 (News)</SelectItem>
-                        <SelectItem value="reports">산업분석 보고서 (Reports)</SelectItem>
-                        <SelectItem value="diaspora">K-디아스포라 (K-Diaspora)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 block">연계 이니셔티브</Label>
-                    <Select
-                      value={form.initiativeSlug || "none"}
-                      onValueChange={(v) => setForm({ ...form, initiativeSlug: v === "none" ? "" : v })}
-                    >
-                      <SelectTrigger className="h-9 text-xs rounded-lg bg-slate-50/50">
-                        <SelectValue placeholder="선택 (선택사항)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">전체 / 미지정</SelectItem>
-                        {initiatives.map((init) => (
-                          <SelectItem key={init.slug} value={init.slug}>
-                            {init.title_ko || init.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 block">발행일자 *</Label>
-                    <Input
-                      type="date"
-                      value={form.publishedDate}
-                      onChange={(e) => setForm({ ...form, publishedDate: e.target.value })}
-                      className="h-9 text-xs rounded-lg bg-slate-50/50"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 block">외부 원문 링크 (선택)</Label>
-                    <Input
-                      value={form.linkUrl}
-                      onChange={(e) => setForm({ ...form, linkUrl: e.target.value })}
-                      placeholder="https://..."
-                      className="h-9 text-xs rounded-lg bg-slate-50/50"
-                    />
-                  </div>
-                </div>
-
-                {/* 2행: 대표 썸네일(50%) + 보고서 PDF 첨부(50%) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-                  {/* 대표 썸네일 이미지 */}
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <ImageIcon className="w-3.5 h-3.5 text-slate-600" />
-                        대표 썸네일 이미지 (카드/헤더용)
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-normal">자동 1600px WebP 압축</span>
-                    </Label>
-                    {form.imageUrl ? (
-                      <div className="relative rounded-xl overflow-hidden border border-slate-200 group h-24 bg-slate-50 flex items-center justify-between p-2">
-                        <img src={form.imageUrl} alt="preview" className="h-full w-32 object-cover rounded-lg" />
-                        <div className="flex-1 px-3 text-xs text-slate-500 truncate">
-                          대표 썸네일 등록됨
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setForm({ ...form, imageUrl: "" })}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 px-2.5 text-xs shrink-0"
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                    ) : (
-                      <label className="w-full h-24 border-2 border-dashed border-slate-200 hover:border-slate-400 hover:bg-slate-50/60 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer bg-slate-50/30">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageUpload}
-                          disabled={uploadingImage}
-                        />
-                        <ImageIcon className="w-4 h-4 text-slate-400" />
-                        <span className="text-xs text-slate-600 font-medium">
-                          {uploadingImage ? "압축 & 업로드 중..." : "클릭하여 대표 이미지 업로드 (최대 15MB)"}
-                        </span>
-                      </label>
-                    )}
-                  </div>
-
-                  {/* 보고서 PDF 파일 첨부 */}
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <FileUp className="w-3.5 h-3.5 text-slate-600" />
-                        첨부파일 / 보고서 전문 PDF
-                      </span>
-                      {form.board === "reports" && (
-                        <span className="text-[10px] text-amber-600 font-semibold bg-amber-50 px-1.5 py-0.2 rounded">
-                          보고서 권장
-                        </span>
-                      )}
-                    </Label>
-                    {form.fileUrl ? (
-                      <div className="flex items-center justify-between p-2.5 h-24 bg-slate-50 border border-slate-200 rounded-xl">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
-                            <FileIcon className="w-5 h-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-semibold text-slate-800 truncate block">
-                              {form.fileName || "첨부 파일.pdf"}
-                            </span>
-                            <span className="text-[11px] text-teal-700 font-medium">PDF 파일 연결 완료</span>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 px-2 text-xs shrink-0"
-                          onClick={() => setForm({ ...form, fileUrl: "", fileName: "" })}
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                    ) : (
-                      <label className="w-full h-24 border-2 border-dashed border-slate-200 hover:border-slate-400 hover:bg-slate-50/60 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer bg-slate-50/30">
-                        <input
-                          type="file"
-                          accept=".pdf,application/pdf"
-                          className="hidden"
-                          onChange={handlePdfUpload}
-                          disabled={uploadingPdf}
-                        />
-                        <FileUp className="w-4 h-4 text-slate-400" />
-                        <span className="text-xs text-slate-600 font-medium">
-                          {uploadingPdf ? "PDF 업로드 중..." : "클릭하여 PDF 보고서 파일 업로드 (최대 30MB)"}
-                        </span>
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. 하단 100% 폭: 몰입형 리치 본문 에디터 (Full-Width Studio) */}
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
-              {/* 에디터 상단 바 (언어 탭 + 딥엘 번역 + 미리보기 토글) */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                <div className="flex bg-slate-100 p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setActiveLangTab("ko")}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      activeLangTab === "ko"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    국문 작성
-                    {form.titleKo && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveLangTab("en")}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      activeLangTab === "en"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    영문 (English) *
-                    {form.title && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* 양방향 DeepL 번역 버튼 (현재 탭에 맞춰 국->영 또는 영->국 자동 전환) */}
-                  {activeLangTab === "ko" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 hover:text-blue-900 text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
-                      onClick={handleTranslateKoToEn}
-                      disabled={translating || !form.titleKo}
-                      title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역합니다."
-                    >
-                      <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                      {translating ? "번역 중..." : "자동 번역"}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold"
-                      onClick={handleTranslateEnToKo}
-                      disabled={translating || !form.title}
-                      title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역합니다."
-                    >
-                      <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                      {translating ? "번역 중..." : "자동 번역"}
-                    </Button>
-                  )}
-
-                  {/* 실시간 미리보기 토글 */}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={isPreviewMode ? "default" : "outline"}
-                    className={`text-xs h-8 px-3 rounded-lg shadow-2xs font-semibold ${
-                      isPreviewMode
-                        ? "bg-[#0f2445] text-white hover:bg-[#1a3a60]"
-                        : "border-slate-300 text-slate-700 hover:bg-slate-100"
-                    }`}
-                    onClick={() => setIsPreviewMode(!isPreviewMode)}
-                  >
-                    {isPreviewMode ? (
-                      <>
-                        <Edit3 className="w-3.5 h-3.5 mr-1.5" /> 편집 모드로 돌아가기
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-3.5 h-3.5 mr-1.5 text-slate-500" /> 실시간 미리보기
-                      </>
-                    )}
-                  </Button>
-                </div>
+            {/* 에디터 상단 툴: 언어 탭 + 딥엘 번역 + 미리보기 토글 */}
+            <div className="flex items-center gap-2 mr-8">
+              <div className="flex bg-slate-200/70 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab("ko")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeLangTab === "ko"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  국문 작성
+                  {form.titleKo && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab("en")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeLangTab === "en"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  영문 (English) *
+                  {form.title && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                </button>
               </div>
 
-              {/* 3. 리치 포스팅 툴바 (Posting Toolbar) */}
-              {!isPreviewMode && (
-                <div className="flex flex-wrap items-center gap-1 p-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
-                  {/* 서식 도구들 */}
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("## ", "\n", "소제목 2")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors flex items-center gap-0.5"
-                    title="소제목 2 (H2)"
-                  >
-                    <Heading2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("### ", "\n", "소제목 3")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors flex items-center gap-0.5"
-                    title="소제목 3 (H3)"
-                  >
-                    <Heading3 className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="w-px h-4 bg-slate-200 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("**", "**", "굵은 텍스트")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="굵게 (Bold)"
-                  >
-                    <Bold className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("*", "*", "기울임 텍스트")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="기울임 (Italic)"
-                  >
-                    <Italic className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("> ", "\n", "인용 문구를 입력하세요")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="인용구 (Blockquote)"
-                  >
-                    <Quote className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="w-px h-4 bg-slate-200 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("- ", "\n", "목록 항목")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="글머리 기호 목록"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("1. ", "\n", "순서 목록 항목")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="번호 목록"
-                  >
-                    <ListOrdered className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("[링크 텍스트](", ")", "https://...")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="하이퍼링크 삽입"
-                  >
-                    <Link2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting("\n---\n", "\n")}
-                    className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
-                    title="구분선 삽입"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-
-                  <div className="w-px h-4 bg-slate-200 mx-1" />
-
-                  {/* 본문 사진 업로드 및 삽입 버튼 (핵심!) */}
-                  <input
-                    type="file"
-                    ref={inlineImageInputRef}
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleInlineImageUpload}
-                    disabled={uploadingInlineImage}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => inlineImageInputRef.current?.click()}
-                    disabled={uploadingInlineImage}
-                    className="p-1.5 px-3 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold transition-all flex items-center gap-1.5 ml-auto border border-teal-200/80 shadow-2xs"
-                    title="본문 커서 위치에 사진을 업로드하고 삽입합니다"
-                  >
-                    <ImagePlus className="w-3.5 h-3.5 text-teal-600" />
-                    <span>{uploadingInlineImage ? "본문 사진 업로드 중..." : "🖼️ 본문 사진 삽입"}</span>
-                  </button>
-                </div>
+              {/* 양방향 DeepL 번역 버튼 */}
+              {activeLangTab === "ko" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 hover:text-blue-900 text-xs h-8 px-2.5 rounded-lg shadow-2xs font-semibold"
+                  onClick={handleTranslateKoToEn}
+                  disabled={translating || !form.titleKo}
+                  title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역합니다."
+                >
+                  <Languages className="w-3.5 h-3.5 mr-1 text-blue-600" />
+                  {translating ? "번역 중..." : "자동 번역"}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 text-xs h-8 px-2.5 rounded-lg shadow-2xs font-semibold"
+                  onClick={handleTranslateEnToKo}
+                  disabled={translating || !form.title}
+                  title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역합니다."
+                >
+                  <Languages className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                  {translating ? "번역 중..." : "자동 번역"}
+                </Button>
               )}
 
-              {/* 4. 에디터 폼 본체 (국문 / 영문 / 미리보기) */}
+              {/* 실시간 미리보기 토글 */}
+              <Button
+                type="button"
+                size="sm"
+                variant={isPreviewMode ? "default" : "outline"}
+                className={`text-xs h-8 px-2.5 rounded-lg shadow-2xs font-semibold ${
+                  isPreviewMode
+                    ? "bg-[#0f2445] text-white hover:bg-[#1a3a60]"
+                    : "border-slate-300 text-slate-700 hover:bg-slate-100"
+                }`}
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+              >
+                {isPreviewMode ? (
+                  <>
+                    <Edit3 className="w-3.5 h-3.5 mr-1" /> 편집 모드
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" /> 미리보기
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogHeader>
+
+          {/* Studio 2-Column Body */}
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden bg-white">
+            {/* 좌측 72%: 메인 작성 캔버스 (Main Canvas) */}
+            <div className="flex-1 lg:w-[72%] flex flex-col min-h-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto p-5 sm:p-7 space-y-4">
               {isPreviewMode ? (
                 /* 미리보기 화면 */
                 <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-200 min-h-[420px] space-y-4">
@@ -1509,23 +1316,26 @@ export default function AdminPostsTab() {
                   />
                 </div>
               ) : activeLangTab === "ko" ? (
-                /* 국문 작성 폼 (100% 풀 와이드) */
-                <div className="space-y-4 animate-in fade-in-50 duration-150">
+                /* 국문 작성 폼 */
+                <div className="flex-1 flex flex-col space-y-4">
+                  {/* 제목 입력 (탁 트인 보더리스 스타일) */}
                   <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span>제목 (국문)</span>
-                      <span className="text-[10px] text-slate-400 font-normal">단어 드래그 후 우클릭 시 고정 용어 사전 연동</span>
+                    <Label className="text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>제목 (국문) *</span>
+                      <span className="text-[10px] text-slate-400 font-normal">단어 드래그 후 우클릭 시 용어사전 연동</span>
                     </Label>
                     <Input
                       value={form.titleKo}
                       onChange={(e) => setForm({ ...form, titleKo: e.target.value })}
                       onContextMenu={(e) => handleElementContextMenu(e, "ko")}
-                      placeholder="한국어 제목을 입력하세요..."
-                      className="text-base sm:text-lg font-bold h-12 rounded-xl border-slate-200 focus:border-[#0f2445]"
+                      placeholder="국문 제목을 입력하세요..."
+                      className="text-lg sm:text-2xl font-bold h-12 rounded-xl border-slate-200 focus:border-[#0f2445] px-3.5 placeholder:text-slate-300 placeholder:font-normal"
                     />
                   </div>
+
+                  {/* 요약문 입력 */}
                   <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                    <Label className="text-xs font-bold text-slate-700 mb-1 block">
                       요약문 (국문)
                     </Label>
                     <Textarea
@@ -1533,46 +1343,150 @@ export default function AdminPostsTab() {
                       value={form.excerptKo}
                       onChange={(e) => setForm({ ...form, excerptKo: e.target.value })}
                       onContextMenu={(e) => handleElementContextMenu(e, "ko")}
-                      placeholder="목록 및 홈 화면에 노출될 1~2줄 요약문..."
-                      className="text-xs leading-relaxed rounded-xl border-slate-200 focus:border-[#0f2445]"
+                      placeholder="목록 및 홈 화면에 노출될 1~2줄 요약..."
+                      className="text-xs sm:text-sm leading-relaxed rounded-xl border-slate-200 focus:border-[#0f2445] placeholder:text-slate-300 resize-none"
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span>상세 본문 (국문)</span>
-                      <span className="text-[10px] text-slate-400 font-normal">
-                        위 툴바를 이용해 소제목, 볼드, 본문 사진을 자유롭게 삽입하세요
-                      </span>
-                    </Label>
+
+                  {/* 마크다운 서식 툴바 */}
+                  <div className="flex flex-wrap items-center gap-1 p-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("## ", "\n", "소제목 2")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors flex items-center gap-0.5"
+                      title="소제목 2 (H2)"
+                    >
+                      <Heading2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("### ", "\n", "소제목 3")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors flex items-center gap-0.5"
+                      title="소제목 3 (H3)"
+                    >
+                      <Heading3 className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("**", "**", "굵은 텍스트")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="굵게 (Bold)"
+                    >
+                      <Bold className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("*", "*", "기울임 텍스트")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="기울임 (Italic)"
+                    >
+                      <Italic className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("> ", "\n", "인용 문구를 입력하세요")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="인용구 (Blockquote)"
+                    >
+                      <Quote className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("- ", "\n", "목록 항목")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="글머리 기호 목록"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("1. ", "\n", "순서 목록 항목")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="번호 목록"
+                    >
+                      <ListOrdered className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("[링크 텍스트](", ")", "https://...")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="하이퍼링크 삽입"
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("\n---\n", "\n")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="구분선 삽입"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                    {/* 본문 사진 업로드 버튼 */}
+                    <input
+                      type="file"
+                      ref={inlineImageInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleInlineImageUpload}
+                      disabled={uploadingInlineImage}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => inlineImageInputRef.current?.click()}
+                      disabled={uploadingInlineImage}
+                      className="p-1 px-2.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold transition-all flex items-center gap-1.5 border border-teal-200/80 shadow-2xs"
+                      title="본문 커서 위치에 사진을 업로드하고 삽입합니다"
+                    >
+                      <ImagePlus className="w-3.5 h-3.5 text-teal-600" />
+                      <span>{uploadingInlineImage ? "업로드 중..." : "🖼️ 본문 사진 삽입"}</span>
+                    </button>
+
+                    {/* 클립보드 붙여넣기 힌트 */}
+                    <span className="hidden sm:inline-block ml-auto text-[11px] text-slate-400 font-medium">
+                      💡 캡처 이미지를 본문에 직접 붙여넣기(Ctrl+V) 가능
+                    </span>
+                  </div>
+
+                  {/* 상세 본문 입력창 (확장형 캔버스) */}
+                  <div className="flex-1 flex flex-col min-h-[380px]">
                     <Textarea
                       ref={contentKoRef}
-                      rows={14}
                       value={form.contentKo}
                       onChange={(e) => setForm({ ...form, contentKo: e.target.value })}
+                      onPaste={(e) => handlePasteImage(e, "ko")}
                       onContextMenu={(e) => handleElementContextMenu(e, "ko")}
-                      placeholder="블로그를 쓰듯이 본문 내용을 자유롭게 작성하세요...&#10;&#10;사진을 넣고 싶을 때는 원하는 줄에 커서를 두고 상단의 [🖼️ 본문 사진 삽입] 버튼을 누르시면 됩니다.&#10;&#10;💡 제목·요약·본문에서 단어를 드래그하고 마우스 우클릭하면 고정 용어 사전 등록/조회 팝오버가 뜹니다."
-                      className="text-sm leading-relaxed font-sans rounded-xl border-slate-200 focus:border-[#0f2445] min-h-[320px]"
+                      placeholder="본문 내용을 자유롭게 작성하세요...&#10;&#10;캡처 도구로 복사한 이미지를 여기에 바로 붙여넣기(Ctrl+V)하거나 상단의 [🖼️ 본문 사진 삽입] 버튼을 누르면 1600px WebP로 자동 압축되어 본문에 삽입됩니다.&#10;&#10;💡 단어를 드래그하고 마우스 우클릭하면 용어사전 팝오버가 뜹니다."
+                      className="flex-1 min-h-[360px] p-4 text-sm leading-relaxed font-sans rounded-xl border-slate-200 focus:border-[#0f2445] resize-y placeholder:text-slate-300"
                     />
                   </div>
                 </div>
               ) : (
-                /* 영문 작성 폼 (100% 풀 와이드) */
-                <div className="space-y-4 animate-in fade-in-50 duration-150">
+                /* 영문 작성 폼 */
+                <div className="flex-1 flex flex-col space-y-4">
+                  {/* Title (English) */}
                   <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                    <Label className="text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
                       <span>Title (English) *</span>
-                      <span className="text-[10px] text-slate-400 font-normal">단어 드래그 후 우클릭 시 고정 용어 사전 연동</span>
+                      <span className="text-[10px] text-slate-400 font-normal">단어 드래그 후 우클릭 시 용어사전 연동</span>
                     </Label>
                     <Input
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                       onContextMenu={(e) => handleElementContextMenu(e, "en")}
-                      placeholder="Enter English Title..."
-                      className="text-base sm:text-lg font-bold h-12 rounded-xl border-slate-200 focus:border-[#0f2445]"
+                      placeholder="Enter English title..."
+                      className="text-lg sm:text-2xl font-bold h-12 rounded-xl border-slate-200 focus:border-[#0f2445] px-3.5 placeholder:text-slate-300 placeholder:font-normal"
                     />
                   </div>
+
+                  {/* Excerpt (English) */}
                   <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                    <Label className="text-xs font-bold text-slate-700 mb-1 block">
                       Excerpt (English) *
                     </Label>
                     <Textarea
@@ -1580,40 +1494,288 @@ export default function AdminPostsTab() {
                       value={form.excerpt}
                       onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
                       onContextMenu={(e) => handleElementContextMenu(e, "en")}
-                      placeholder="Short summary for preview cards..."
-                      className="text-xs leading-relaxed rounded-xl border-slate-200 focus:border-[#0f2445]"
+                      placeholder="Short summary for preview cards in English..."
+                      className="text-xs sm:text-sm leading-relaxed rounded-xl border-slate-200 focus:border-[#0f2445] placeholder:text-slate-300 resize-none"
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span>Content (English) *</span>
-                      <span className="text-[10px] text-slate-400 font-normal">
-                        Markdown formatting and inline images are supported
-                      </span>
-                    </Label>
+
+                  {/* Markdown Toolbar */}
+                  <div className="flex flex-wrap items-center gap-1 p-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("## ", "\n", "Heading 2")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors flex items-center gap-0.5"
+                      title="Heading 2 (H2)"
+                    >
+                      <Heading2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("### ", "\n", "Heading 3")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors flex items-center gap-0.5"
+                      title="Heading 3 (H3)"
+                    >
+                      <Heading3 className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("**", "**", "bold text")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Bold"
+                    >
+                      <Bold className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("*", "*", "italic text")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Italic"
+                    >
+                      <Italic className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("> ", "\n", "Quote block")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Quote"
+                    >
+                      <Quote className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("- ", "\n", "List item")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Bullet list"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("1. ", "\n", "Ordered item")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Numbered list"
+                    >
+                      <ListOrdered className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("[link text](", ")", "https://...")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Insert Link"
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting("\n---\n", "\n")}
+                      className="p-1.5 px-2 rounded-md hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors"
+                      title="Horizontal line"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                    <button
+                      type="button"
+                      onClick={() => inlineImageInputRef.current?.click()}
+                      disabled={uploadingInlineImage}
+                      className="p-1 px-2.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold transition-all flex items-center gap-1.5 border border-teal-200/80 shadow-2xs"
+                      title="Upload and insert picture at cursor"
+                    >
+                      <ImagePlus className="w-3.5 h-3.5 text-teal-600" />
+                      <span>{uploadingInlineImage ? "Uploading..." : "🖼️ Insert Image"}</span>
+                    </button>
+
+                    <span className="hidden sm:inline-block ml-auto text-[11px] text-slate-400 font-medium">
+                      💡 Paste clipboard image directly (Ctrl+V)
+                    </span>
+                  </div>
+
+                  {/* Content (English) */}
+                  <div className="flex-1 flex flex-col min-h-[380px]">
                     <Textarea
                       ref={contentEnRef}
-                      rows={14}
                       value={form.content}
                       onChange={(e) => setForm({ ...form, content: e.target.value })}
+                      onPaste={(e) => handlePasteImage(e, "en")}
                       onContextMenu={(e) => handleElementContextMenu(e, "en")}
-                      placeholder="Detailed article or report content in English...&#10;&#10;Place cursor and click [🖼️ 본문 사진 삽입] to insert pictures anywhere.&#10;&#10;💡 Drag any word and right-click to look up or register fixed glossary terms."
-                      className="text-sm leading-relaxed font-sans rounded-xl border-slate-200 focus:border-[#0f2445] min-h-[320px]"
+                      placeholder="Write your article or report content in English...&#10;&#10;Paste copied images directly (Ctrl+V) or click [🖼️ Insert Image] above to upload and embed WebP images at cursor position."
+                      className="flex-1 min-h-[360px] p-4 text-sm leading-relaxed font-sans rounded-xl border-slate-200 focus:border-[#0f2445] resize-y placeholder:text-slate-300"
                     />
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* 하단 에디터 가이드 상태바 */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>
-                  {activeLangTab === "ko" ? "🇰🇷 국문 작성 모드" : "🇺🇸 영문 작성 모드 (글로벌 필수)"}
-                </span>
-                <span>
-                  {activeLangTab === "ko" && !form.title && (
-                    <span className="text-amber-600 font-medium">⚠️ 저장 전 상단의 [자동 번역] 또는 직접 영문 작성이 필요합니다.</span>
+            {/* 우측 28%: 게시 설정 및 미디어 사이드 패널 (Side Panel) */}
+            <div className="w-full lg:w-[28%] bg-slate-50/60 overflow-y-auto p-4 sm:p-5 space-y-4 shrink-0 border-t lg:border-t-0 border-slate-200">
+              {/* 1. 게시 기본 속성 카드 */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3.5">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                  <Settings2 className="w-3.5 h-3.5 text-slate-500" />
+                  게시 기본 설정
+                </h4>
+
+                <div>
+                  <Label className="text-xs font-bold text-slate-700 mb-1 block">게시판 구분 *</Label>
+                  <Select
+                    value={form.board}
+                    onValueChange={(v: "news" | "diaspora" | "reports") => setForm({ ...form, board: v })}
+                  >
+                    <SelectTrigger className="h-9 text-xs rounded-lg bg-slate-50/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="news">뉴스 & 공지 (News)</SelectItem>
+                      <SelectItem value="reports">산업분석 보고서 (Reports)</SelectItem>
+                      <SelectItem value="diaspora">K-디아스포라 (K-Diaspora)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold text-slate-700 mb-1 block">연계 이니셔티브</Label>
+                  <Select
+                    value={form.initiativeSlug || "none"}
+                    onValueChange={(v) => setForm({ ...form, initiativeSlug: v === "none" ? "" : v })}
+                  >
+                    <SelectTrigger className="h-9 text-xs rounded-lg bg-slate-50/50">
+                      <SelectValue placeholder="선택 (선택사항)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">전체 / 미지정</SelectItem>
+                      {initiatives.map((init) => (
+                        <SelectItem key={init.slug} value={init.slug}>
+                          {init.title_ko || init.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>발행일자 *</span>
+                    <span className="text-[10px] text-slate-400 font-normal">예약발행 지원</span>
+                  </Label>
+                  <Input
+                    type="date"
+                    value={form.publishedDate}
+                    onChange={(e) => setForm({ ...form, publishedDate: e.target.value })}
+                    className="h-9 text-xs rounded-lg bg-slate-50/50"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                    오늘 이후 날짜 선택 시 예약 발행되어 해당 날짜까지 일반 방문자에게 숨겨집니다.
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold text-slate-700 mb-1 block">외부 원문 링크 (선택)</Label>
+                  <Input
+                    value={form.linkUrl}
+                    onChange={(e) => setForm({ ...form, linkUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="h-9 text-xs rounded-lg bg-slate-50/50"
+                  />
+                </div>
+              </div>
+
+              {/* 2. 대표 썸네일 카드 */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2.5">
+                <Label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-slate-600" />
+                    대표 썸네일 이미지
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">자동 WebP</span>
+                </Label>
+                {form.imageUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-slate-200 group h-28 bg-slate-50 flex items-center justify-between p-2">
+                    <img src={form.imageUrl} alt="preview" className="h-full w-28 object-cover rounded-md" />
+                    <div className="flex-1 px-2 text-[11px] text-slate-500 truncate">
+                      대표 이미지 등록됨
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setForm({ ...form, imageUrl: "" })}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 px-2 text-xs shrink-0"
+                    >
+                      삭제
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="w-full h-24 border-2 border-dashed border-slate-200 hover:border-slate-400 hover:bg-slate-50/60 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer bg-slate-50/30 p-2 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                    />
+                    <ImageIcon className="w-4 h-4 text-slate-400" />
+                    <span className="text-[11px] text-slate-600 font-medium">
+                      {uploadingImage ? "압축 & 업로드 중..." : "대표 이미지 업로드 (최대 15MB)"}
+                    </span>
+                  </label>
+                )}
+              </div>
+
+              {/* 3. 보고서 전문 PDF 첨부 카드 */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2.5">
+                <Label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <FileUp className="w-3.5 h-3.5 text-slate-600" />
+                    첨부파일 / 보고서 PDF
+                  </span>
+                  {form.board === "reports" && (
+                    <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.2 rounded">
+                      보고서 권장
+                    </span>
                   )}
-                </span>
+                </Label>
+                {form.fileUrl ? (
+                  <div className="flex items-center justify-between p-2.5 h-20 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+                        <FileIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold text-slate-800 truncate block">
+                          {form.fileName || "보고서 전문.pdf"}
+                        </span>
+                        <span className="text-[10px] text-teal-700 font-medium">PDF 연결 완료</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 px-2 text-xs shrink-0"
+                      onClick={() => setForm({ ...form, fileUrl: "", fileName: "" })}
+                    >
+                      삭제
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="w-full h-24 border-2 border-dashed border-slate-200 hover:border-slate-400 hover:bg-slate-50/60 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer bg-slate-50/30 p-2 text-center">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="hidden"
+                      onChange={handlePdfUpload}
+                      disabled={uploadingPdf}
+                    />
+                    <FileUp className="w-4 h-4 text-slate-400" />
+                    <span className="text-[11px] text-slate-600 font-medium">
+                      {uploadingPdf ? "PDF 업로드 중..." : "PDF 파일 업로드 (최대 30MB)"}
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
           </div>

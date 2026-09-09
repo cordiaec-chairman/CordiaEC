@@ -27,7 +27,7 @@ export default function AdminHomeSettingsTab() {
 
   const { data: postsData } = useQuery({
     queryKey: ["admin_posts", "news"],
-    queryFn: () => getPosts({ board: "news", page: 1, limit: 100 }),
+    queryFn: () => getPosts({ board: "news", page: 1, limit: 100, includeScheduled: true }),
   });
 
   useEffect(() => {

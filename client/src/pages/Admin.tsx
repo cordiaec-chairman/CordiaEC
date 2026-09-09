@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
-import { Lock, FileText, Layers, History, LayoutGrid, Mail, LogOut, Images, Megaphone, Handshake, BookOpen } from "lucide-react";
+import { Lock, FileText, Layers, History, LayoutGrid, Mail, LogOut, Images, Megaphone, Handshake, BookOpen, Video } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import AdminLoginForm from "@/components/admin/AdminLoginForm";
@@ -14,6 +14,7 @@ import AdminContactsTab from "@/components/admin/AdminContactsTab";
 import AdminHeroTab from "@/components/admin/AdminHeroTab";
 import AdminPopupsTab from "@/components/admin/AdminPopupsTab";
 import AdminPartnersTab from "@/components/admin/AdminPartnersTab";
+import AdminYouTubeTab from "@/components/admin/AdminYouTubeTab";
 
 const MENU = [
   { id: "hero", label: "히어로", icon: Images },
@@ -21,6 +22,7 @@ const MENU = [
   { id: "milestones", label: "연혁", icon: History },
   { id: "initiatives", label: "이니셔티브", icon: Layers },
   { id: "posts", label: "게시글/보고서", icon: FileText },
+  { id: "youtube", label: "유튜브 영상", icon: Video },
   { id: "partners", label: "협력사", icon: Handshake },
   { id: "home", label: "홈/SNS 설정", icon: LayoutGrid },
   { id: "contacts", label: "문의함", icon: Mail },
@@ -37,7 +39,6 @@ export default function Admin() {
   const handleLogout = async () => {
     try {
       sessionStorage.clear();
-      localStorage.removeItem("test_admin_auth");
       await supabase.auth.signOut();
     } catch (e) {
       // Ignore errors
@@ -114,6 +115,7 @@ export default function Admin() {
             {/* Content */}
             <section className="flex-1 min-w-0 w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               {active === "posts" && <AdminPostsTab />}
+              {active === "youtube" && <AdminYouTubeTab />}
               {active === "glossary" && <AdminGlossaryTab />}
               {active === "partners" && <AdminPartnersTab />}
               {active === "hero" && <AdminHeroTab />}
