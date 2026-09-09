@@ -455,8 +455,8 @@ export default function AdminPostsTab() {
       }
     }
 
-    // 2. 자동 번역 모드가 OFF인데 영문이 아직 비어있는 경우 (확인 팝업 띄움)
-    if (hasKo && !hasEn) {
+    // 2. 자동 번역 모드가 OFF인데 영문이 비어있거나, 국문이 수정된 경우 (확인 팝업)
+    if (hasKo && (!hasEn || (editing && isKoChanged))) {
       setConfirmTranslateOpen(true);
       return;
     }
@@ -501,12 +501,12 @@ export default function AdminPostsTab() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-2xs hover:border-slate-300 transition-colors">
             <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
               <Sparkles className={`w-3.5 h-3.5 ${autoTranslateEnabled ? "text-blue-600" : "text-slate-400"}`} />
-              저장 시 영문 자동 번역
+              저장 시 자동 번역
             </span>
             <Switch
               checked={autoTranslateEnabled}
               onCheckedChange={toggleAutoTranslate}
-              aria-label="저장 시 영문 자동 번역"
+              aria-label="저장 시 자동 번역"
             />
           </div>
           <Button onClick={openCreate} className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-medium">
@@ -1030,7 +1030,7 @@ export default function AdminPostsTab() {
                       title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역합니다."
                     >
                       <Languages className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                      {translating ? "번역 중..." : "국문 → 영문 자동 번역"}
+                      {translating ? "번역 중..." : "자동 번역"}
                     </Button>
                   ) : (
                     <Button
@@ -1043,7 +1043,7 @@ export default function AdminPostsTab() {
                       title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역합니다."
                     >
                       <Languages className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                      {translating ? "번역 중..." : "영문 → 국문 자동 번역"}
+                      {translating ? "번역 중..." : "자동 번역"}
                     </Button>
                   )}
 
@@ -1312,7 +1312,7 @@ export default function AdminPostsTab() {
               />
               <label htmlFor="modal-auto-translate" className="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
                 <Sparkles className={`w-3.5 h-3.5 ${autoTranslateEnabled ? "text-blue-600" : "text-slate-400"}`} />
-                저장 시 영문 자동 번역
+                저장 시 자동 번역
                 <span className={`text-[11px] font-normal ${autoTranslateEnabled ? "text-blue-600 font-bold" : "text-slate-400"}`}>
                   ({autoTranslateEnabled ? "켜짐" : "꺼짐"})
                 </span>
@@ -1334,7 +1334,7 @@ export default function AdminPostsTab() {
                 }
               >
                 {translating
-                  ? "영문 번역 중..."
+                  ? "번역 중..."
                   : saveMutation.isPending
                   ? "저장 중..."
                   : editing
@@ -1346,7 +1346,7 @@ export default function AdminPostsTab() {
         </DialogContent>
       </Dialog>
 
-      {/* 영문 미작성 시 저장 확인 팝업 (스마트 옵션) */}
+      {/* 국문 수정 / 영문 미작성 시 저장 확인 팝업 */}
       <AlertDialog open={confirmTranslateOpen} onOpenChange={setConfirmTranslateOpen}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
@@ -1354,11 +1354,13 @@ export default function AdminPostsTab() {
               <Sparkles className="w-5 h-5" />
             </div>
             <AlertDialogTitle className="text-base font-bold text-slate-900">
-              영문 번역본을 생성하시겠습니까?
+              {editing ? "영문도 함께 갱신하시겠습니까?" : "영문 번역본을 생성하시겠습니까?"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-slate-600 space-y-2 leading-relaxed pt-1">
               <p>
-                현재 <strong className="text-slate-900">국문 내용만 작성</strong>되어 있습니다. 글로벌 사이트 방문자를 위해 영문 번역본을 함께 생성하시겠습니까?
+                {editing
+                  ? "국문 내용이 수정되었습니다. 영문 버전도 자동 번역하여 함께 갱신할까요?"
+                  : "현재 국문 내용만 작성되어 있습니다. 글로벌 방문자를 위해 영문 번역본을 함께 생성하시겠습니까?"}
               </p>
               <p className="text-slate-400 text-[11px]">
                 본문 서식과 이미지 배치를 보존하며 영문으로 자동 번역됩니다.
@@ -1375,7 +1377,7 @@ export default function AdminPostsTab() {
               disabled={translating || saveMutation.isPending}
             >
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              영문 자동 번역 후 저장
+              자동 번역 후 저장
             </Button>
             <div className="flex items-center gap-2 w-full">
               <Button
@@ -1387,7 +1389,7 @@ export default function AdminPostsTab() {
                 }}
                 disabled={saveMutation.isPending}
               >
-                🇰🇷 한국어만 저장
+                현재 상태로 저장
               </Button>
               <Button
                 variant="ghost"
@@ -1397,7 +1399,7 @@ export default function AdminPostsTab() {
                   setActiveLangTab("en");
                 }}
               >
-                취소 (영문 직접 확인)
+                취소 (직접 확인)
               </Button>
             </div>
           </AlertDialogFooter>
