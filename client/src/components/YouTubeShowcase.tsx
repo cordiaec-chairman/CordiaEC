@@ -50,15 +50,15 @@ export default function YouTubeShowcase() {
   return (
     <section className="py-14 sm:py-20 bg-gradient-to-b from-[#0b172a] to-[#0f2445] text-white border-b border-slate-800 relative overflow-hidden">
       {/* Background subtle glow effect */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-teal-300 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2.5 border border-white/15">
-              <Film className="w-3.5 h-3.5 text-teal-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white/90 rounded-full text-[11px] font-medium tracking-wide mb-2.5 border border-white/15">
+              <Film className="w-3.5 h-3.5 text-red-400" />
               <span>{lang === "ko" ? "미디어 & 영상 아카이브" : "Media & Archives"}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
@@ -102,7 +102,7 @@ export default function YouTubeShowcase() {
           <div className="lg:col-span-5 flex flex-col">
             <div
               onClick={() => setSelectedVideo(featuredVideo)}
-              className="group flex-1 flex flex-col bg-slate-800/80 hover:bg-slate-800 rounded-2xl overflow-hidden border border-slate-700/80 hover:border-teal-500/50 transition-all duration-300 cursor-pointer shadow-xl relative"
+              className="group flex-1 flex flex-col bg-slate-800/80 hover:bg-slate-800 rounded-2xl overflow-hidden border border-slate-700/80 hover:border-slate-500/70 transition-all duration-300 cursor-pointer shadow-xl relative"
             >
               {/* Featured Video Thumbnail with Overlay */}
               <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
@@ -138,7 +138,7 @@ export default function YouTubeShowcase() {
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>{featuredVideo.published_date}</span>
                   </div>
-                  <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-teal-300 transition-colors line-clamp-2 leading-snug">
+                  <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-slate-100 transition-colors line-clamp-2 leading-snug">
                     {featuredTitle}
                   </h3>
                   {featuredSummary && (
@@ -148,7 +148,7 @@ export default function YouTubeShowcase() {
                   )}
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-700/60 flex items-center justify-between text-xs font-semibold text-teal-400 group-hover:text-teal-300">
+                <div className="pt-4 mt-4 border-t border-slate-700/60 flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-white transition-colors">
                   <span>{lang === "ko" ? "영상 재생하기" : "Watch Video"}</span>
                   <Play className="w-3.5 h-3.5 fill-current" />
                 </div>
@@ -176,7 +176,7 @@ export default function YouTubeShowcase() {
                     <div
                       key={video.id}
                       onClick={() => setSelectedVideo(video)}
-                      className="group snap-start shrink-0 w-[260px] sm:w-[280px] bg-slate-800/80 hover:bg-slate-800 rounded-2xl overflow-hidden border border-slate-700/80 hover:border-teal-500/50 transition-all duration-300 cursor-pointer shadow-lg flex flex-col"
+                      className="group snap-start shrink-0 w-[260px] sm:w-[280px] bg-slate-800/80 hover:bg-slate-800 rounded-2xl overflow-hidden border border-slate-700/80 hover:border-slate-500/70 transition-all duration-300 cursor-pointer shadow-lg flex flex-col"
                     >
                       {/* Thumbnail with Play Icon on hover */}
                       <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
@@ -198,10 +198,10 @@ export default function YouTubeShowcase() {
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1.5">
-                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             <span>{video.published_date}</span>
                           </div>
-                          <h4 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-teal-300 transition-colors line-clamp-2 leading-snug">
+                          <h4 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-slate-100 transition-colors line-clamp-2 leading-snug">
                             {title}
                           </h4>
                           {summary && (
@@ -211,9 +211,9 @@ export default function YouTubeShowcase() {
                           )}
                         </div>
 
-                        <div className="pt-3 mt-3 border-t border-slate-700/60 flex items-center justify-between text-[11px] font-medium text-slate-400 group-hover:text-teal-300">
+                        <div className="pt-3 mt-3 border-t border-slate-700/60 flex items-center justify-between text-[11px] font-medium text-slate-400 group-hover:text-white transition-colors">
                           <span>{lang === "ko" ? "시청하기" : "Watch"}</span>
-                          <Play className="w-3 h-3 fill-current" />
+                          <Play className="w-3.5 h-3.5 fill-current" />
                         </div>
                       </div>
                     </div>

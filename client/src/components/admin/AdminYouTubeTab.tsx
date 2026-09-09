@@ -7,6 +7,7 @@ import {
   updateYoutubeVideo,
   deleteYoutubeVideo,
   extractYouTubeVideoId,
+  translateTexts,
 } from "@/lib/queries";
 import type { YouTubeVideo } from "@/lib/database.types";
 import { Button } from "@/components/ui/button";
@@ -34,13 +35,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar, Video, ExternalLink, Play } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, Video, ExternalLink, Play, Sparkles, Languages, Loader2 } from "lucide-react";
 
 export default function AdminYouTubeTab() {
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<YouTubeVideo | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [activeLangTab, setActiveLangTab] = useState<"ko" | "en">("ko");
+  const [translating, setTranslating] = useState(false);
 
   const defaultForm = {
     youtube_url: "",
@@ -153,6 +156,7 @@ export default function AdminYouTubeTab() {
       ...defaultForm,
       display_order: videos.length + 1,
     });
+    setActiveLangTab("ko");
     setFormOpen(true);
   };
 
@@ -169,7 +173,82 @@ export default function AdminYouTubeTab() {
       display_order: video.display_order,
       is_active: video.is_active,
     });
+    setActiveLangTab("ko");
     setFormOpen(true);
+  };
+
+  const handleTranslateKoToEn = async () => {
+    const sources = [form.title_ko, form.summary_ko];
+    if (!sources.some((t) => t?.trim())) {
+      toast({
+        title: "번역할 국문 내용이 없습니다",
+        description: "국문 제목이나 요약을 먼저 작성해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [enTitle, enSummary] = await translateTexts(
+        sources.map((t) => t || " "),
+        "EN-US"
+      );
+      setForm((prev) => ({
+        ...prev,
+        title: prev.title_ko.trim() ? enTitle.trim() : prev.title,
+        summary: prev.summary_ko.trim() ? enSummary.trim() : prev.summary,
+      }));
+      setActiveLangTab("en");
+      toast({
+        title: "영문 자동 번역 완료",
+        description: "국문 내용을 바탕으로 영문 제목과 설명이 생성되었습니다.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "번역 실패",
+        description: err.message || "DeepL 번역 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateEnToKo = async () => {
+    const sources = [form.title, form.summary];
+    if (!sources.some((t) => t?.trim())) {
+      toast({
+        title: "번역할 영문 내용이 없습니다",
+        description: "영문 제목이나 요약을 먼저 작성해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [koTitle, koSummary] = await translateTexts(
+        sources.map((t) => t || " "),
+        "KO"
+      );
+      setForm((prev) => ({
+        ...prev,
+        title_ko: prev.title.trim() ? koTitle.trim() : prev.title_ko,
+        summary_ko: prev.summary.trim() ? koSummary.trim() : prev.summary_ko,
+      }));
+      setActiveLangTab("ko");
+      toast({
+        title: "국문 자동 번역 완료",
+        description: "영문 내용을 바탕으로 국문 제목과 설명이 생성되었습니다.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "번역 실패",
+        description: err.message || "DeepL 번역 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleUrlChange = (url: string) => {
@@ -274,7 +353,8 @@ export default function AdminYouTubeTab() {
           {videos.map((video, idx) => (
             <Card
               key={video.id}
-              className="border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all group overflow-hidden"
+              onClick={() => openEditForm(video)}
+              className="border border-slate-200/90 hover:border-slate-400 hover:shadow-md transition-all group overflow-hidden cursor-pointer bg-white hover:bg-slate-50/50"
             >
               <CardContent className="p-3.5 sm:p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
@@ -283,10 +363,10 @@ export default function AdminYouTubeTab() {
                     <img
                       src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                      <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow">
                         <Play className="w-3 h-3 ml-0.5 fill-current" />
                       </div>
                     </div>
@@ -319,6 +399,11 @@ export default function AdminYouTubeTab() {
                     <h3 className="text-sm font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">
                       {video.title_ko || video.title}
                     </h3>
+                    {video.title && video.title_ko && video.title !== video.title_ko && (
+                      <p className="text-xs text-slate-400 truncate">
+                        ({video.title})
+                      </p>
+                    )}
                     {video.summary_ko || video.summary ? (
                       <p className="text-xs text-slate-500 truncate mt-0.5">
                         {video.summary_ko || video.summary}
@@ -333,6 +418,7 @@ export default function AdminYouTubeTab() {
                     href={video.youtube_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                     title="유튜브에서 원본 보기"
                   >
@@ -342,17 +428,24 @@ export default function AdminYouTubeTab() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => openEditForm(video)}
-                    className="h-8 px-2.5 text-xs text-slate-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditForm(video);
+                    }}
+                    className="h-8 px-2.5 text-xs text-slate-700 flex items-center gap-1"
                     title="수정"
                   >
                     <Pencil className="w-3.5 h-3.5" />
+                    <span>수정</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setDeleteTargetId(video.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTargetId(video.id);
+                    }}
                     className="h-8 px-2.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
                     title="삭제"
                   >
@@ -402,57 +495,137 @@ export default function AdminYouTubeTab() {
                 />
                 <div className="min-w-0 text-xs">
                   <span className="font-semibold text-slate-800 block truncate">추출된 Video ID</span>
-                  <code className="text-teal-700 font-mono text-[11px] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                  <code className="text-slate-700 font-mono text-[11px] bg-slate-200/80 px-1.5 py-0.5 rounded border border-slate-300">
                     {form.video_id}
                   </code>
                 </div>
               </div>
             ) : null}
 
-            {/* Title (Korean / English) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs font-bold text-slate-700 mb-1 block">제목 (국문) *</Label>
-                <Input
-                  value={form.title_ko}
-                  onChange={(e) => setForm({ ...form, title_ko: e.target.value })}
-                  placeholder="한국어 영상 제목"
-                  className="text-xs rounded-xl"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-bold text-slate-700 mb-1 block">제목 (영문)</Label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="English Video Title"
-                  className="text-xs rounded-xl"
-                />
-              </div>
-            </div>
+            {/* Bilingual Content Studio with Auto-Translate */}
+            <div className="space-y-3 pt-1">
+              {/* Language Switcher Tabs & Auto Translate Button */}
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <div className="flex items-center gap-1.5 p-0.5 bg-slate-100 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setActiveLangTab("ko")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      activeLangTab === "ko"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <span>🇰🇷 한국어</span>
+                    {form.title_ko && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveLangTab("en")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      activeLangTab === "en"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <span>🇺🇸 English</span>
+                    {form.title && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                  </button>
+                </div>
 
-            {/* Summary (Korean / English) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs font-bold text-slate-700 mb-1 block">요약 설명 (국문)</Label>
-                <Textarea
-                  rows={2}
-                  value={form.summary_ko}
-                  onChange={(e) => setForm({ ...form, summary_ko: e.target.value })}
-                  placeholder="홈 화면 카드에 표시될 1~2줄 요약..."
-                  className="text-xs rounded-xl"
-                />
+                {/* Auto Translate Trigger Button */}
+                {activeLangTab === "ko" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTranslateKoToEn}
+                    disabled={translating || !form.title_ko.trim()}
+                    className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
+                  >
+                    {translating ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                    <span>영문으로 자동 번역</span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTranslateEnToKo}
+                    disabled={translating || !form.title.trim()}
+                    className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
+                  >
+                    {translating ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                    <span>국문으로 자동 번역</span>
+                  </Button>
+                )}
               </div>
-              <div>
-                <Label className="text-xs font-bold text-slate-700 mb-1 block">요약 설명 (영문)</Label>
-                <Textarea
-                  rows={2}
-                  value={form.summary}
-                  onChange={(e) => setForm({ ...form, summary: e.target.value })}
-                  placeholder="Brief summary in English..."
-                  className="text-xs rounded-xl"
-                />
-              </div>
+
+              {/* Korean Tab Panel */}
+              {activeLangTab === "ko" && (
+                <div className="space-y-3.5">
+                  <div>
+                    <Label className="text-xs font-bold text-slate-700 mb-1 block">
+                      영상 제목 (국문) *
+                    </Label>
+                    <Input
+                      value={form.title_ko}
+                      onChange={(e) => setForm({ ...form, title_ko: e.target.value })}
+                      placeholder="예: 글로벌 한인 디아스포라 네트워크"
+                      className="text-xs rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold text-slate-700 mb-1 block">
+                      영상 요약 설명 (국문)
+                    </Label>
+                    <Textarea
+                      rows={3}
+                      value={form.summary_ko}
+                      onChange={(e) => setForm({ ...form, summary_ko: e.target.value })}
+                      placeholder="홈 화면 카드에 표시될 1~2줄 요약 설명..."
+                      className="text-xs rounded-xl leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* English Tab Panel */}
+              {activeLangTab === "en" && (
+                <div className="space-y-3.5">
+                  <div>
+                    <Label className="text-xs font-bold text-slate-700 mb-1 block">
+                      Video Title (English) *
+                    </Label>
+                    <Input
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="e.g. Global Korean Diaspora Network"
+                      className="text-xs rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold text-slate-700 mb-1 block">
+                      Video Summary (English)
+                    </Label>
+                    <Textarea
+                      rows={3}
+                      value={form.summary}
+                      onChange={(e) => setForm({ ...form, summary: e.target.value })}
+                      placeholder="Short summary displayed on home cards..."
+                      className="text-xs rounded-xl leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Published Date & Display Order & Active */}
