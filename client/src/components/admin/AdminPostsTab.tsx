@@ -58,6 +58,7 @@ import {
   ChevronUp,
   Settings2,
   ImagePlus,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -80,6 +81,7 @@ type BoardFilter = "all" | "news" | "diaspora" | "reports";
 export default function AdminPostsTab() {
   const { toast } = useToast();
   const [boardFilter, setBoardFilter] = useState<BoardFilter>("all");
+  const [initiativeFilter, setInitiativeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchInput, setSearchInput] = useState("");
@@ -228,14 +230,27 @@ export default function AdminPostsTab() {
     }
   };
 
-  const { data: postsData, isLoading } = useQuery({
-    queryKey: ["admin_posts", boardFilter, page, limit, searchQuery],
-    queryFn: () => getPosts({ board: boardFilter === "all" ? undefined : boardFilter, page, limit, search: searchQuery || undefined }),
-  });
-
   const { data: initiatives = [] } = useQuery({
     queryKey: ["initiatives"],
     queryFn: getInitiatives,
+  });
+
+  const getInitiativeTitle = (slug?: string | null) => {
+    if (!slug) return null;
+    const init = initiatives.find((i) => i.slug === slug);
+    return init ? init.title_ko || init.title : slug;
+  };
+
+  const { data: postsData, isLoading } = useQuery({
+    queryKey: ["admin_posts", boardFilter, initiativeFilter, page, limit, searchQuery],
+    queryFn: () =>
+      getPosts({
+        board: boardFilter === "all" ? undefined : boardFilter,
+        initiativeSlug: initiativeFilter === "all" ? undefined : initiativeFilter,
+        page,
+        limit,
+        search: searchQuery || undefined,
+      }),
   });
 
   const posts = postsData?.posts || [];
@@ -406,68 +421,168 @@ export default function AdminPostsTab() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Select
-          value={boardFilter}
-          onValueChange={(v: BoardFilter) => {
-            setBoardFilter(v);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">모두 보기</SelectItem>
-            <SelectItem value="news">뉴스</SelectItem>
-            <SelectItem value="reports">산업분석 보고서</SelectItem>
-            <SelectItem value="diaspora">K-Diaspora</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Filters (쇼핑몰 스타일 복합 조건 필터) */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* 1. 대분류: 게시판 세그먼트 버튼 탭 */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70">
+            {[
+              { id: "all", label: "전체 게시판" },
+              { id: "news", label: "뉴스 & 공지" },
+              { id: "reports", label: "산업분석 보고서" },
+              { id: "diaspora", label: "K-디아스포라" },
+            ].map((b) => (
+              <button
+                key={b.id}
+                onClick={() => {
+                  setBoardFilter(b.id as BoardFilter);
+                  setPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  boardFilter === b.id
+                    ? "bg-[#0f2445] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/70"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
 
-        <Select
-          value={String(limit)}
-          onValueChange={(v) => {
-            setLimit(parseInt(v, 10));
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10개씩 보기</SelectItem>
-            <SelectItem value="20">20개씩 보기</SelectItem>
-            <SelectItem value="50">50개씩 보기</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="relative flex-1 min-w-[180px]">
-          <Input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            placeholder="제목·요약 검색..."
-            className="pl-9"
-          />
-          <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-        </div>
-        <Button variant="outline" onClick={runSearch}>
-          검색
-        </Button>
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            className="text-gray-400"
-            onClick={() => {
-              setSearchInput("");
-              setSearchQuery("");
+          {/* 보기 개수 */}
+          <Select
+            value={String(limit)}
+            onValueChange={(v) => {
+              setLimit(parseInt(v, 10));
               setPage(1);
             }}
           >
-            초기화
+            <SelectTrigger className="w-28 h-8 text-xs rounded-lg bg-slate-50 border-slate-200">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10개씩 보기</SelectItem>
+              <SelectItem value="20">20개씩 보기</SelectItem>
+              <SelectItem value="50">50개씩 보기</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 2. 소분류: 이니셔티브 필터 + 검색창 */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="w-full sm:w-64 shrink-0">
+            <Select
+              value={initiativeFilter}
+              onValueChange={(v) => {
+                setInitiativeFilter(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 text-xs rounded-xl bg-slate-50/70 border-slate-200">
+                <SelectValue placeholder="모든 이니셔티브" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">🌐 전체 이니셔티브 (모두 보기)</SelectItem>
+                {initiatives.map((init) => (
+                  <SelectItem key={init.slug} value={init.slug}>
+                    {init.title_ko || init.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="relative flex-1">
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runSearch()}
+              placeholder="제목·요약·내용 통합 키워드 검색..."
+              className="pl-9 pr-8 h-9 text-xs rounded-xl bg-slate-50/70 border-slate-200"
+            />
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            {searchInput && (
+              <button
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchQuery("");
+                  setPage(1);
+                }}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <Button
+            onClick={runSearch}
+            className="h-9 px-4 text-xs font-semibold bg-[#0f2445] hover:bg-[#1a3a60] text-white rounded-xl shrink-0"
+          >
+            검색
           </Button>
+        </div>
+
+        {/* 3. 복합 필터 Active Tags (적용된 필터 칩) */}
+        {(boardFilter !== "all" || initiativeFilter !== "all" || searchQuery) && (
+          <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 text-xs">
+            <span className="text-slate-400 font-medium text-[11px]">적용된 조건:</span>
+            {boardFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1 bg-slate-200/80 text-slate-700 text-xs py-0.5 px-2 font-medium">
+                게시판: {boardFilter === "news" ? "뉴스" : boardFilter === "reports" ? "보고서" : "K-디아스포라"}
+                <button
+                  onClick={() => {
+                    setBoardFilter("all");
+                    setPage(1);
+                  }}
+                  className="hover:text-slate-900 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {initiativeFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1 bg-teal-100 text-teal-800 text-xs py-0.5 px-2 font-medium">
+                이니셔티브: {getInitiativeTitle(initiativeFilter)}
+                <button
+                  onClick={() => {
+                    setInitiativeFilter("all");
+                    setPage(1);
+                  }}
+                  className="hover:text-teal-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {searchQuery && (
+              <Badge variant="secondary" className="gap-1 bg-blue-100 text-blue-800 text-xs py-0.5 px-2 font-medium">
+                키워드: "{searchQuery}"
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchQuery("");
+                    setPage(1);
+                  }}
+                  className="hover:text-blue-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            <button
+              onClick={() => {
+                setBoardFilter("all");
+                setInitiativeFilter("all");
+                setSearchInput("");
+                setSearchQuery("");
+                setPage(1);
+              }}
+              className="text-xs text-slate-500 hover:text-red-600 font-medium underline ml-auto transition-colors"
+            >
+              전체 필터 초기화
+            </button>
+          </div>
         )}
       </div>
 
@@ -492,7 +607,7 @@ export default function AdminPostsTab() {
                     <img src={post.image_url} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                       <Badge
                         variant="outline"
                         className={`shrink-0 text-xs ${
@@ -503,9 +618,26 @@ export default function AdminPostsTab() {
                             : "border-cordia-blue/40 text-cordia-blue"
                         }`}
                       >
-                        {post.board === "news" ? "뉴스" : post.board === "reports" ? "보고서" : "K-Diaspora"}
+                        {post.board === "news" ? "뉴스" : post.board === "reports" ? "보고서" : "K-디아스포라"}
                       </Badge>
-                      <p className="font-semibold text-cordia-dark truncate">{post.title}</p>
+                      {post.initiative_slug && getInitiativeTitle(post.initiative_slug) && (
+                        <Badge variant="secondary" className="shrink-0 text-[11px] bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                          {getInitiativeTitle(post.initiative_slug)}
+                        </Badge>
+                      )}
+                      {post.is_pinned_home && (
+                        <Badge variant="secondary" className="shrink-0 text-[10px] bg-amber-100 text-amber-800 font-medium">
+                          홈 고정
+                        </Badge>
+                      )}
+                      <p className="font-semibold text-cordia-dark truncate">
+                        {post.title_ko || post.title}
+                      </p>
+                      {post.title_ko && post.title && post.title_ko !== post.title && (
+                        <span className="text-xs text-slate-400 truncate hidden md:inline">
+                          ({post.title})
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
                       <span className="flex items-center gap-1">

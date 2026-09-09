@@ -102,7 +102,7 @@ const STRINGS: Record<string, { en: string; ko: string }> = {
   "home.learnMoreAbout": { en: "Learn More About Us", ko: "더 알아보기" },
   "home.initiativesTitle": {
     en: "From Knowledge Production to Knowledge Connection",
-    ko: "From Knowledge Production to Knowledge Connection",
+    ko: "지식 생산에서 지식 연결로",
   },
   "home.initiativesDesc": {
     en: "Cordia is a knowledge platform connecting Koreans around the world. We give meaning to previously unconnected knowledge, bridging people with people, policy with market, and culture with economy.",

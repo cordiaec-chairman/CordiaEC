@@ -36,6 +36,26 @@ export default function Layout({ children }: LayoutProps) {
     queryFn: getSiteSettings,
   });
 
+  const isAdmin = location.startsWith("/admin");
+  const [snsDismissed, setSnsDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const expiry = localStorage.getItem("cordia_sns_dismissed_until");
+      return expiry ? Date.now() < Number(expiry) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismissSns = () => {
+    setSnsDismissed(true);
+    try {
+      localStorage.setItem("cordia_sns_dismissed_until", String(Date.now() + 24 * 60 * 60 * 1000));
+    } catch {
+      // Ignore
+    }
+  };
+
   const isResearchActive = location.startsWith("/reports") || location.startsWith("/overseas-korean");
 
   const LangToggle = (
@@ -317,18 +337,28 @@ export default function Layout({ children }: LayoutProps) {
         )}
       </header>
 
-      {/* 우측 화면 고정 플로팅 SNS 빠른 링크 바 (Desktop) */}
-      <aside
-        aria-label="Social Media Quick Links"
-        className="fixed right-3.5 sm:right-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-2 z-40 bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all"
-      >
-        <div className="text-[10px] font-bold text-slate-400 text-center tracking-tighter pb-0.5 border-b border-slate-100">
-          SNS
-        </div>
-        <div className="py-0.5">
-          <SnsLinks size="sm" direction="col" />
-        </div>
-      </aside>
+      {/* 우측 화면 고정 플로팅 SNS 빠른 링크 바 (Desktop, 관리자 페이지 제외 & 24시간 닫기 지원) */}
+      {!isAdmin && !snsDismissed && (
+        <aside
+          aria-label="Social Media Quick Links"
+          className="fixed right-3.5 sm:right-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-1.5 z-40 bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all"
+        >
+          <div className="flex items-center justify-between gap-1 pb-1 border-b border-slate-100 px-0.5">
+            <span className="text-[9px] font-bold text-slate-400 tracking-tighter">SNS</span>
+            <button
+              onClick={handleDismissSns}
+              className="p-0.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+              title="24시간 동안 보지 않기"
+              aria-label="SNS 바로가기 닫기"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </div>
+          <div className="py-0.5">
+            <SnsLinks size="sm" direction="col" />
+          </div>
+        </aside>
+      )}
 
       <main className="pt-16">{children}</main>
 

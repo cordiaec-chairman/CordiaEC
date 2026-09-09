@@ -58,8 +58,8 @@ WHERE slug = 'business-trade';
 UPDATE initiatives
 SET
   title = 'K-Culture & Life',
-  title_ko = 'K-Culture & Life',
-  label = 'K-Culture & Life',
+  title_ko = 'K-컬처 & 라이프 (K-Culture & Life)',
+  label = 'K-컬처 & 라이프',
   category = 'K-Culture',
   description = 'Culture is not merely an object of consumption but the core of national competitiveness; interpreting food, wine, cities, travel, and history as a unified K-Culture ecosystem.',
   description_ko = '문화는 소비 대상이 아니라 국가 경쟁력의 핵심이며, 음식, 와인, 도시, 여행, 역사 등을 하나의 K 문화 생태계로 해석한다.',
