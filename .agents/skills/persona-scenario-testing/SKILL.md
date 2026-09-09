@@ -1,55 +1,121 @@
 ---
 name: persona-scenario-testing
-description: "기능 개발 후 다양한 사용자 페르소나(Persona)와 시나리오를 설계하고, 브라우저를 직접 띄워 자율 검증 및 Gap 분석을 수행하는 QA 스킬"
+description: "기능 개발 후 다양한 사용자 페르소나(Persona)와 시나리오를 설계하고, 브라우저를 직접 띄워 물리적 상태 단언(Physical Assertion) 및 Gap 분석을 수행하는 엄격한 QA 스킬"
 ---
 
 # 페르소나 기반 시나리오 테스팅 스킬 (Persona Scenario Testing)
 
-이 스킬은 복합 기능을 개발하거나 수정한 후, 단순 단위 테스트를 넘어 **실제 사용자 페르소나 관점에서의 사용자 경험(UX), 인터랙션 충돌, 예외 상황**을 사전에 발굴하고 검증하기 위한 체계적인 QA 워크플로우입니다.
+AI 에이전트의 주관적이고 낙관적인 판단("잘 된 것 같습니다")을 배제하고, **오픈소스 QA 프레임워크(browser-use, Stagehand, Midscene)의 핵심 엔지니어링 원칙(물리적 상태 검증, 불변식 검증, 에러 인터셉트)**을 적용하여 변칙성을 통제하는 엄격한 테스트 프로토콜입니다.
 
 ---
 
-## 4단계 실행 워크플로우
+## 4대 불변 검증 원칙 (Invariants)
 
-### 1단계: 페르소나 및 시나리오 매트릭스 도출
-기능의 성격에 맞춰 극단적이거나 현실적인 3~4가지 페르소나를 정의합니다:
+테스트 실행 시 AI는 단순 눈대중이 아닌, 브라우저 콘솔에서 다음 **4대 물리적 검증 코드**를 실행하여 `PASS` 여부를 판정해야 합니다:
 
-1. **페르소나 1 (Speed / Trivial Update)**:
-   - "오타 하나 고치러 온 바쁜 관리자" (사소한 1~2자 수정 후 빠른 저장)
-   - *검증 포인트*: 불필요한 전체 번역이나 모달 팝업으로 흐름이 끊기지 않는가?
-2. **페르소나 2 (Craftsman / Manual Perfection)**:
-   - "영문 번역본을 원어민 수준으로 손수 다듬어 둔 꼼꼼한 관리자"
-   - *검증 포인트*: 국문 수정 시 공들여 작성한 기존 영문이 의도치 않게 자동 덮어씌워지지 않는가?
-3. **페르소나 3 (Power User / Complex Workflow)**:
-   - "용어집에 새 단어를 계속 등록하고, 다른 게시글까지 일괄 동기화하려는 기획자"
-   - *검증 포인트*: 우클릭 팝오버 위치, 포커스 트랩, 일괄 치환 후 상태 갱신이 매끄러운가?
-4. **페르소나 4 (Edge Case / Accidental Action)**:
-   - "모달 창 바깥을 잘못 클릭하거나 드래그 취소를 빈번히 하는 사용자"
-   - *검증 포인트*: 상태 꼬임, 화면 밖 쳐박힘, 유실 위험이 없는가?
+### 1. 뷰포트 레이아웃 물리 검증 (Viewport Alignment)
+모달, 팝오버 등 오버레이 UI가 화면 밖이나 최하단으로 밀려 떨어지지 않았는지 좌표를 검증합니다.
+```javascript
+// 브라우저 evaluate로 실행
+(() => {
+  const modal = document.querySelector('[role="dialog"]');
+  if (!modal) return { pass: false, reason: "모달 DOM 없음" };
+  const rect = modal.getBoundingClientRect();
+  const centerY = (rect.top + rect.bottom) / 2;
+  const viewportCenterY = window.innerHeight / 2;
+  const isCentered = Math.abs(centerY - viewportCenterY) < 80;
+  const isInViewport = rect.top >= 0 && rect.bottom <= window.innerHeight + 50;
+  return {
+    pass: isCentered && isInViewport,
+    rect: { top: rect.top, bottom: rect.bottom, height: rect.height },
+    centerY,
+    viewportCenterY,
+    reason: !isCentered ? "모달이 화면 중앙이 아닌 곳(하단 등)으로 밀림" : "정상"
+  };
+})();
+```
+
+### 2. 상호작용성 및 포커스 트랩 검증 (Interactivity & Pointer-Events)
+요소가 눈에 보이더라도 `pointer-events: none`이나 Radix Focus Trap에 의해 먹통인지 검증합니다.
+```javascript
+(() => {
+  const popover = document.querySelector('[style*="z-index: 70"]') || document.querySelector('[style*="z-index: 9999"]');
+  const input = popover?.querySelector('input');
+  if (!input) return { pass: false, reason: "입력창 요소 없음" };
+  
+  const style = window.getComputedStyle(input);
+  const pointerEventsOk = style.pointerEvents !== 'none';
+  input.focus();
+  const hasFocus = document.activeElement === input;
+  
+  return {
+    pass: pointerEventsOk && hasFocus,
+    pointerEvents: style.pointerEvents,
+    hasFocus,
+    reason: !pointerEventsOk ? "pointer-events: none 차단됨" : !hasFocus ? "포커스 트랩으로 입력 포커스 불가" : "정상"
+  };
+})();
+```
+
+### 3. 데이터 보존 불변식 검증 (Data Preservation Invariant)
+"국문만 수정" 페르소나 실행 시, 기존 영문이 의도치 않게 새로 번역되어 덮어쓰여졌는지 원문과 대조합니다.
+```javascript
+// 수정 전 영문 원문 (beforeEn)과 저장 후 영문 (afterEn) 일치 검증
+if (scenario === "keep_english_on_minor_edit") {
+  assert(beforeEn.trim() === afterEn.trim(), "CRITICAL: 기존 영문이 자동 번역으로 덮어쓰여져 유실됨!");
+}
+```
+
+### 4. 콘솔 무결성 (Console & Network Errors)
+테스트 수행 중 `console.error` 또는 HTTP 4xx/5xx 실패가 1건이라도 발생하면 실패 처리.
 
 ---
 
-### 2단계: 자율 브라우저 실행 검증 (`browser_subagent`)
-에이전트가 직접 브라우저 서브에이전트를 실행하여 실제 화면에서 페르소나별 행동을 재현합니다:
-- `http://localhost:5173/admin` 또는 로컬 미리보기 접속
-- 관리자 로그인 ➔ 게시글 목록 클릭 ➔ 모달 열기
-- 모달이 브라우저 화면 정중앙(`isInViewport`)에 정상 렌더링되는지 확인
-- 텍스트 드래그 ➔ 우클릭 ➔ 팝오버 위치 및 입력 포커스 확인
-- 각각의 저장 버튼(`[수정사항만 저장]`, `[번역 후 저장]`) 클릭 동작 확인
-- 각 단계별 스크린샷 캡처
+## 실행 프로세스 (Execution Lifecycle)
+
+```
+[1. 페르소나 정의]
+   ↓ (목적, 예상 행동, 금기 사항(Anti-patterns) 명시)
+[2. 브라우저 subagent 가동 & 액션 실행]
+   ↓ (실제 마우스 클릭, 텍스트 드래그, 우클릭, 타이핑)
+[3. 브라우저 내부 물리 검증 (JS Assertion 실행)]
+   ↓ (좌표, pointer-events, activeElement, 데이터 diff 측정)
+[4. 실패 원인 공학적 분석 (CSS 충돌, FocusScope, 상태 불일치)]
+   ↓
+[5. 사용자에게 사실 기반 정량 보고서 제출]
+```
 
 ---
 
-### 3단계: 예상 결과와 실제 결과의 Gap 분석
-테스트 실행 후 다음 항목을 분석합니다:
-- **기능적 결함**: 클릭 불가, 포커스 불가, 화면 밖 렌더링, 런타임 콘솔 에러
-- **UX적 충돌**: 사용자의 의도와 다르게 동작하거나(영문 덮어쓰기 등), 클릭 동선이 불필요하게 긴 곳
-- **데이터 정합성**: 저장 후 목록과 DB에 정확히 반영되었는가
+## 페르소나 템플릿 예시
+
+1. **오타 수정형 페르소나 (Minor Fixer)**
+   - **목표**: 국문 제목의 오타 1글자만 수정하고 저장.
+   - **검증**: `[수정사항만 저장 (영문 유지)]` 클릭 ➔ 영문 데이터 변경량 0 byte 확인.
+2. **글로벌 전면 개편 페르소나 (Full Synchronizer)**
+   - **목표**: 국문 본문 단락을 대폭 수정하고 영문도 통일.
+   - **검증**: `[번역 후 저장 (영문 최신화)]` 클릭 ➔ 영문 자동 갱신 및 등록된 고정 용어 치환율 100% 확인.
+3. **용어집 수시 등록 페르소나 (Glossary Power User)**
+   - **목표**: 본문 단어 드래그 ➔ 우클릭 ➔ 팝오버 입력 ➔ 등록.
+   - **검증**: 팝오버 출현 좌표가 커서 근처인가? 인풋 포커스 정상인가? 닫기 버튼 작동하는가?
+4. **변칙적 조작 페르소나 (Adversarial / Chaos User)**
+   - **목표**: 모달 바깥 연타, 1글자만 드래그 후 우클릭, 빈 텍스트 저장 시도.
+   - **검증**: 모달 갇힘 현상 없음, 유효성 검증 토스트 출현, 비정상 API 호출 차단.
 
 ---
 
-### 4단계: 보고 및 사용자 피드백 요청
-분석 결과를 사용자에게 투명하게 공유합니다:
-1. 각 페르소나별 시나리오 테스트 결과 요약 (Pass / Fail)
-2. 발견된 문제점 또는 엣지 케이스
-3. 개선안 제안 및 사용자의 결정 요청
+## 보고서 출력 양식 (Output Format)
+
+```markdown
+### 🧪 페르소나 시나리오 테스트 결과 보고
+
+| 페르소나 | 시나리오 | 물리 검증 결과 (좌표/포커스/데이터) | 판정 |
+|---|---|---|---|
+| 오타 수정자 | 국문 1자 수정 후 저장 | 영문 원문 diff: 0 바이트 보존 | PASS |
+| 용어 등록자 | 단어 드래그 후 우클릭 | rect.top: 240px (뷰포트 중앙), 포커스 획득 | PASS |
+| 변칙 조작자 | 바깥 클릭 및 미입력 저장 | alert-dialog 정상 방어, 콘솔 에러 0건 | PASS |
+
+#### 🔍 발견된 Gap 및 개선 필요 지점
+- [ ] 문제점: (있을 경우 구체적 CSS 클래스 또는 상태 불일치 명시)
+- [ ] 권장 해결책:
+```
