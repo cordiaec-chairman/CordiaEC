@@ -1638,25 +1638,62 @@ export default function AdminPostsTab() {
               <Button variant="outline" onClick={() => setFormOpen(false)} className="rounded-lg text-xs h-9 px-4">
                 취소
               </Button>
-              <Button
-                className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-semibold rounded-lg text-xs h-9 px-5 shadow-sm"
-                onClick={handleInitiateSave}
-                disabled={
-                  saveMutation.isPending ||
-                  translating ||
-                  (!form.title.trim() && !form.titleKo.trim()) ||
-                  (!form.content.trim() && !form.contentKo.trim()) ||
-                  !form.publishedDate
-                }
-              >
-                {translating
-                  ? "번역 중..."
-                  : saveMutation.isPending
-                  ? "저장 중..."
-                  : editing
-                  ? "수정사항 저장"
-                  : "게시글 발행"}
-              </Button>
+              {editing ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-slate-300 text-slate-700 hover:bg-slate-100 font-medium rounded-lg text-xs h-9 px-3.5 shadow-2xs"
+                    onClick={() => saveMutation.mutate(form)}
+                    disabled={
+                      saveMutation.isPending ||
+                      translating ||
+                      (!form.title.trim() && !form.titleKo.trim()) ||
+                      (!form.content.trim() && !form.contentKo.trim()) ||
+                      !form.publishedDate
+                    }
+                    title="오타 수정 등 가벼운 편집 시 기존 영문 내용을 보존하고 저장합니다."
+                  >
+                    {saveMutation.isPending ? "저장 중..." : "수정사항만 저장 (영문 유지)"}
+                  </Button>
+                  <Button
+                    className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-semibold rounded-lg text-xs h-9 px-4 shadow-sm flex items-center gap-1.5"
+                    onClick={executeSaveWithAutoTranslate}
+                    disabled={
+                      saveMutation.isPending ||
+                      translating ||
+                      (!form.titleKo.trim() && !form.title.trim()) ||
+                      !form.publishedDate
+                    }
+                    title="국문 내용을 기반으로 영문을 새로 자동 번역하여 함께 저장합니다."
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+                    {translating ? "번역 및 저장 중..." : "번역 후 저장 (영문 최신화)"}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-semibold rounded-lg text-xs h-9 px-5 shadow-sm flex items-center gap-1.5"
+                  onClick={autoTranslateEnabled && (!form.title.trim() || !form.content.trim()) ? executeSaveWithAutoTranslate : () => saveMutation.mutate(form)}
+                  disabled={
+                    saveMutation.isPending ||
+                    translating ||
+                    (!form.title.trim() && !form.titleKo.trim()) ||
+                    (!form.content.trim() && !form.contentKo.trim()) ||
+                    !form.publishedDate
+                  }
+                >
+                  {autoTranslateEnabled && (!form.title.trim() || !form.content.trim()) && (
+                    <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+                  )}
+                  {translating
+                    ? "번역 및 발행 중..."
+                    : saveMutation.isPending
+                    ? "발행 중..."
+                    : autoTranslateEnabled && (!form.title.trim() || !form.content.trim())
+                    ? "자동 번역 후 발행"
+                    : "게시글 발행"}
+                </Button>
+              )}
             </div>
           </DialogFooter>
 
