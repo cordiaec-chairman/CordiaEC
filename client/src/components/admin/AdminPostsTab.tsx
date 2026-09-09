@@ -59,7 +59,9 @@ import {
   Settings2,
   ImagePlus,
   X,
+  Sparkles,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   getPosts,
@@ -118,6 +120,28 @@ export default function AdminPostsTab() {
   };
   const [form, setForm] = useState(defaultForm);
   const [translating, setTranslating] = useState(false);
+
+  // 영문 자동 번역 토글 상태 (로컬 스토리지에 기억)
+  const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const saved = localStorage.getItem("cordia_admin_auto_translate_posts");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleAutoTranslate = (val: boolean) => {
+    setAutoTranslateEnabled(val);
+    try {
+      localStorage.setItem("cordia_admin_auto_translate_posts", String(val));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const [confirmTranslateOpen, setConfirmTranslateOpen] = useState(false);
 
   const insertFormatting = (prefix: string, suffix: string = "", placeholder: string = "") => {
     const isKo = activeLangTab === "ko";
@@ -337,33 +361,34 @@ export default function AdminPostsTab() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      const finalTitleKo = form.titleKo.trim() || null;
-      const finalContentKo = form.contentKo.trim() || null;
-      const finalExcerptKo = form.excerptKo.trim() || (finalContentKo ? finalContentKo.slice(0, 150) : null);
+    mutationFn: async (overrideForm?: typeof form) => {
+      const activeForm = overrideForm || form;
+      const finalTitleKo = activeForm.titleKo.trim() || null;
+      const finalContentKo = activeForm.contentKo.trim() || null;
+      const finalExcerptKo = activeForm.excerptKo.trim() || (finalContentKo ? finalContentKo.slice(0, 150) : null);
 
-      const finalTitle = form.title.trim() || finalTitleKo || "";
-      const finalContent = form.content.trim() || finalContentKo || "";
-      const finalExcerpt = form.excerpt.trim() || finalExcerptKo || (finalContent ? finalContent.slice(0, 150) : "");
+      const finalTitle = activeForm.title.trim() || finalTitleKo || "";
+      const finalContent = activeForm.content.trim() || finalContentKo || "";
+      const finalExcerpt = activeForm.excerpt.trim() || finalExcerptKo || (finalContent ? finalContent.slice(0, 150) : "");
 
       const payload: Record<string, any> = {
-        board: form.board,
+        board: activeForm.board,
         title: finalTitle,
         excerpt: finalExcerpt,
         content: finalContent,
         title_ko: finalTitleKo,
         excerpt_ko: finalExcerptKo,
         content_ko: finalContentKo,
-        image_url: form.imageUrl || null,
-        link_url: form.linkUrl || null,
-        initiative_slug: form.initiativeSlug && form.initiativeSlug !== "none" ? form.initiativeSlug : null,
+        image_url: activeForm.imageUrl || null,
+        link_url: activeForm.linkUrl || null,
+        initiative_slug: activeForm.initiativeSlug && activeForm.initiativeSlug !== "none" ? activeForm.initiativeSlug : null,
         is_pinned_home: editing ? editing.is_pinned_home : false,
-        published_date: new Date(form.publishedDate).toISOString(),
+        published_date: new Date(activeForm.publishedDate).toISOString(),
       };
 
       // 파일이 첨부된 경우에만 컬럼 전송 (PostgREST schema cache 400 에러 방지)
-      if (form.fileUrl) payload.file_url = form.fileUrl;
-      if (form.fileName) payload.file_name = form.fileName;
+      if (activeForm.fileUrl) payload.file_url = activeForm.fileUrl;
+      if (activeForm.fileName) payload.file_name = activeForm.fileName;
 
       if (editing) {
         await updatePost(editing.id, payload);
@@ -374,6 +399,7 @@ export default function AdminPostsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries();
       setFormOpen(false);
+      setConfirmTranslateOpen(false);
       toast({ title: editing ? "수정 완료" : "등록 완료" });
     },
     onError: (err: any) => {
@@ -384,6 +410,60 @@ export default function AdminPostsTab() {
       });
     },
   });
+
+  const executeSaveWithAutoTranslate = async () => {
+    setTranslating(true);
+    try {
+      const sources = [form.titleKo, form.excerptKo, form.contentKo];
+      const [tEn, eEn, cEn] = await translateTexts(sources.map((t) => t || " "), "EN-US");
+      const updatedForm = {
+        ...form,
+        title: tEn.trim(),
+        excerpt: eEn.trim(),
+        content: cEn.trim(),
+      };
+      setForm(updatedForm);
+      await saveMutation.mutateAsync(updatedForm);
+      toast({
+        title: "영문 자동 번역 및 저장 완료",
+        description: "DeepL을 통해 영문 제목·요약·본문이 자동 생성되어 함께 저장되었습니다.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "영문 자동 번역 실패",
+        description: (err.message || "DeepL 번역 중 오류가 발생했습니다.") + " 국문으로 우선 저장합니다.",
+        variant: "destructive",
+      });
+      await saveMutation.mutateAsync(form);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleInitiateSave = async () => {
+    const hasKo = Boolean(form.titleKo.trim() || form.contentKo.trim());
+    const hasEn = Boolean(form.title.trim() && form.content.trim());
+    const isKoChanged = editing
+      ? form.titleKo.trim() !== (editing.title_ko || "").trim() || form.contentKo.trim() !== (editing.content_ko || "").trim()
+      : false;
+
+    // 1. 자동 번역 모드가 ON인 경우
+    if (autoTranslateEnabled && hasKo) {
+      if (!hasEn || !editing || isKoChanged) {
+        await executeSaveWithAutoTranslate();
+        return;
+      }
+    }
+
+    // 2. 자동 번역 모드가 OFF인데 영문이 아직 비어있는 경우 (확인 팝업 띄움)
+    if (hasKo && !hasEn) {
+      setConfirmTranslateOpen(true);
+      return;
+    }
+
+    // 3. 일반 저장
+    saveMutation.mutate(form);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -416,9 +496,23 @@ export default function AdminPostsTab() {
         <h2 className="text-xl font-bold text-slate-900">
           게시글 <Badge variant="secondary">{total}</Badge>
         </h2>
-        <Button onClick={openCreate} className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-medium">
-          <Plus className="w-4 h-4 mr-2" />새 글
-        </Button>
+        <div className="flex items-center gap-2.5">
+          {/* 포스팅 집중 작업용 영문 자동 번역 스위치 */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-2xs hover:border-slate-300 transition-colors">
+            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <Sparkles className={`w-3.5 h-3.5 ${autoTranslateEnabled ? "text-blue-600" : "text-slate-400"}`} />
+              저장 시 영문 자동 번역
+            </span>
+            <Switch
+              checked={autoTranslateEnabled}
+              onCheckedChange={toggleAutoTranslate}
+              aria-label="저장 시 영문 자동 번역"
+            />
+          </div>
+          <Button onClick={openCreate} className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-medium">
+            <Plus className="w-4 h-4 mr-2" />새 글
+          </Button>
+        </div>
       </div>
 
       {/* Filters (쇼핑몰 스타일 복합 조건 필터) */}
@@ -1209,30 +1303,106 @@ export default function AdminPostsTab() {
           </div>
 
           {/* Dialog Footer */}
-          <DialogFooter className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex flex-row items-center justify-between">
-            <p className="text-xs text-slate-500 hidden sm:block">
-              💡 국문 작성 후 <span className="font-semibold text-slate-700">[국문 → 영문 자동 번역]</span>을 누르면 영문 버전이 즉시 생성됩니다.
-            </p>
+          <DialogFooter className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={autoTranslateEnabled}
+                onCheckedChange={toggleAutoTranslate}
+                id="modal-auto-translate"
+              />
+              <label htmlFor="modal-auto-translate" className="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                <Sparkles className={`w-3.5 h-3.5 ${autoTranslateEnabled ? "text-blue-600" : "text-slate-400"}`} />
+                저장 시 영문 자동 번역
+                <span className={`text-[11px] font-normal ${autoTranslateEnabled ? "text-blue-600 font-bold" : "text-slate-400"}`}>
+                  ({autoTranslateEnabled ? "켜짐" : "꺼짐"})
+                </span>
+              </label>
+            </div>
             <div className="flex items-center gap-2 ml-auto">
               <Button variant="outline" onClick={() => setFormOpen(false)} className="rounded-lg text-xs h-9 px-4">
                 취소
               </Button>
               <Button
                 className="bg-[#0f2445] hover:bg-[#1a3a60] text-white font-semibold rounded-lg text-xs h-9 px-5 shadow-sm"
-                onClick={() => saveMutation.mutate()}
+                onClick={handleInitiateSave}
                 disabled={
                   saveMutation.isPending ||
+                  translating ||
                   (!form.title.trim() && !form.titleKo.trim()) ||
                   (!form.content.trim() && !form.contentKo.trim()) ||
                   !form.publishedDate
                 }
               >
-                {saveMutation.isPending ? "저장 중..." : editing ? "수정사항 저장" : "게시글 발행"}
+                {translating
+                  ? "영문 번역 중..."
+                  : saveMutation.isPending
+                  ? "저장 중..."
+                  : editing
+                  ? "수정사항 저장"
+                  : "게시글 발행"}
               </Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 영문 미작성 시 저장 확인 팝업 (스마트 옵션) */}
+      <AlertDialog open={confirmTranslateOpen} onOpenChange={setConfirmTranslateOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-1 border border-blue-100 shadow-2xs">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <AlertDialogTitle className="text-base font-bold text-slate-900">
+              영문 번역본을 생성하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600 space-y-2 leading-relaxed pt-1">
+              <p>
+                현재 <strong className="text-slate-900">국문 내용만 작성</strong>되어 있습니다. 글로벌 사이트 방문자를 위해 영문 번역본을 함께 생성하시겠습니까?
+              </p>
+              <p className="text-slate-400 text-[11px]">
+                DeepL을 통해 본문 서식과 이미지 배치를 그대로 보존하며 영문으로 자동 번역됩니다.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-col gap-2 mt-3">
+            <Button
+              className="w-full bg-[#0f2445] hover:bg-[#1a3a60] text-white text-xs h-9 font-semibold rounded-xl shadow-xs"
+              onClick={async () => {
+                setConfirmTranslateOpen(false);
+                await executeSaveWithAutoTranslate();
+              }}
+              disabled={translating || saveMutation.isPending}
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              ⚡ DeepL 영문 자동 번역 후 저장
+            </Button>
+            <div className="flex items-center gap-2 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 text-xs h-8.5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                onClick={() => {
+                  setConfirmTranslateOpen(false);
+                  saveMutation.mutate(form);
+                }}
+                disabled={saveMutation.isPending}
+              >
+                🇰🇷 한국어만 저장
+              </Button>
+              <Button
+                variant="ghost"
+                className="flex-1 text-xs h-8.5 rounded-xl text-slate-500 hover:text-slate-900"
+                onClick={() => {
+                  setConfirmTranslateOpen(false);
+                  setActiveLangTab("en");
+                }}
+              >
+                취소 (영문 직접 확인)
+              </Button>
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
