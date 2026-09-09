@@ -622,6 +622,88 @@ export async function saveGlossary(items: GlossaryItem[]): Promise<void> {
   await updateSiteSetting("translation_glossary", JSON.stringify(items));
 }
 
+// 고정 용어가 포함된 전체 게시글 조회
+export async function findPostsContainingTerm(oldKo: string, oldEn: string): Promise<Post[]> {
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*");
+    if (error || !data) return [];
+
+    const cleanKo = oldKo.trim();
+    const cleanEn = oldEn.trim();
+
+    return (data as Post[]).filter((post) => {
+      const texts = [
+        post.title,
+        post.excerpt,
+        post.content,
+        post.title_ko,
+        post.excerpt_ko,
+        post.content_ko,
+      ].filter(Boolean) as string[];
+
+      return texts.some((t) =>
+        (cleanKo && t.includes(cleanKo)) ||
+        (cleanEn && t.toLowerCase().includes(cleanEn.toLowerCase()))
+      );
+    });
+  } catch (err) {
+    console.error("findPostsContainingTerm error:", err);
+    return [];
+  }
+}
+
+// 여러 게시글에서 고정 용어 일괄 치환 업데이트
+export async function batchReplaceTermInPosts(
+  posts: Post[],
+  oldKo: string,
+  newKo: string,
+  oldEn: string,
+  newEn: string
+): Promise<number> {
+  let updatedCount = 0;
+  for (const post of posts) {
+    let changed = false;
+    const patch: Record<string, any> = {};
+
+    const replaceText = (text: string | null | undefined, oldVal: string, newVal: string, caseInsensitive = false) => {
+      if (!text || !oldVal || oldVal === newVal) return text;
+      if (caseInsensitive) {
+        const regex = new RegExp(oldVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+        if (regex.test(text)) {
+          changed = true;
+          return text.replace(regex, newVal);
+        }
+      } else {
+        if (text.includes(oldVal)) {
+          changed = true;
+          return text.replaceAll(oldVal, newVal);
+        }
+      }
+      return text;
+    };
+
+    if (oldKo.trim() && newKo.trim() && oldKo.trim() !== newKo.trim()) {
+      if (post.title_ko) patch.title_ko = replaceText(post.title_ko, oldKo.trim(), newKo.trim());
+      if (post.excerpt_ko) patch.excerpt_ko = replaceText(post.excerpt_ko, oldKo.trim(), newKo.trim());
+      if (post.content_ko) patch.content_ko = replaceText(post.content_ko, oldKo.trim(), newKo.trim());
+    }
+
+    if (oldEn.trim() && newEn.trim() && oldEn.trim() !== newEn.trim()) {
+      if (post.title) patch.title = replaceText(post.title, oldEn.trim(), newEn.trim(), true);
+      if (post.excerpt) patch.excerpt = replaceText(post.excerpt, oldEn.trim(), newEn.trim(), true);
+      if (post.content) patch.content = replaceText(post.content, oldEn.trim(), newEn.trim(), true);
+    }
+
+    if (changed && Object.keys(patch).length > 0) {
+      await updatePost(post.id, patch);
+      updatedCount++;
+    }
+  }
+  return updatedCount;
+}
+
 // ============================================================
 // DeepL 번역 (관리자 전용 — 마크다운 이미지/태그 & 고정 용어사전 보호)
 // ============================================================

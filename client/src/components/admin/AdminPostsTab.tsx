@@ -60,6 +60,7 @@ import {
   ImagePlus,
   X,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +75,11 @@ import {
   deletePdf,
   getInitiatives,
   translateTexts,
+  getGlossary,
+  saveGlossary,
+  findPostsContainingTerm,
+  batchReplaceTermInPosts,
+  type GlossaryItem,
 } from "@/lib/queries";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import type { Post } from "@/lib/database.types";
@@ -142,6 +148,227 @@ export default function AdminPostsTab() {
   };
 
   const [confirmTranslateOpen, setConfirmTranslateOpen] = useState(false);
+
+  // 고정 용어 사전 로드
+  const { data: glossary = [] } = useQuery({
+    queryKey: ["glossary"],
+    queryFn: getGlossary,
+  });
+
+  // 본문 텍스트 드래그 시 뜨는 플로팅 용어 팝오버 상태
+  interface FloatingPopoverState {
+    open: boolean;
+    x: number;
+    y: number;
+    selectedText: string;
+    lang: "ko" | "en";
+    matched: GlossaryItem | null;
+    ko: string;
+    en: string;
+  }
+  const [floatingPopover, setFloatingPopover] = useState<FloatingPopoverState | null>(null);
+  const [savingGlossary, setSavingGlossary] = useState(false);
+
+  // 용어 수정 시 다른 게시글 일괄 변경 확인 모달 상태
+  interface BatchConfirmState {
+    open: boolean;
+    matchedPosts: Post[];
+    oldKo: string;
+    newKo: string;
+    oldEn: string;
+    newEn: string;
+    updating: boolean;
+  }
+  const [batchConfirm, setBatchConfirm] = useState<BatchConfirmState | null>(null);
+
+  const handleTextareaMouseUp = (e: React.MouseEvent<HTMLTextAreaElement>, lang: "ko" | "en") => {
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) {
+      if (floatingPopover && !savingGlossary) {
+        setFloatingPopover(null);
+      }
+      return;
+    }
+
+    const selected = textarea.value.substring(start, end).trim();
+    if (selected.length >= 2 && selected.length <= 50) {
+      const match = glossary.find(
+        (g) =>
+          g.ko.trim().toLowerCase() === selected.toLowerCase() ||
+          g.en.trim().toLowerCase() === selected.toLowerCase()
+      );
+
+      const popoverWidth = 330;
+      const x = Math.min(window.innerWidth - popoverWidth - 20, Math.max(20, e.clientX - popoverWidth / 2));
+      const y = Math.max(16, e.clientY - 145);
+
+      setFloatingPopover({
+        open: true,
+        x,
+        y,
+        selectedText: selected,
+        lang,
+        matched: match || null,
+        ko: match ? match.ko : lang === "ko" ? selected : "",
+        en: match ? match.en : lang === "en" ? selected : "",
+      });
+    }
+  };
+
+  const handleAddGlossaryTerm = async () => {
+    if (!floatingPopover) return;
+    const ko = floatingPopover.ko.trim();
+    const en = floatingPopover.en.trim();
+    if (!ko || !en) {
+      toast({ title: "국문과 영문 표기를 모두 입력해주세요.", variant: "destructive" });
+      return;
+    }
+    setSavingGlossary(true);
+    try {
+      const newItem: GlossaryItem = {
+        id: crypto.randomUUID(),
+        ko,
+        en,
+      };
+      const nextList = [...glossary, newItem];
+      await saveGlossary(nextList);
+      queryClient.setQueryData(["glossary"], nextList);
+      toast({
+        title: "고정 용어 등록 완료",
+        description: `"${ko}" ↔ "${en}" (자동 번역 시 100% 고정 반영됩니다)`,
+      });
+      setFloatingPopover(null);
+    } catch (err: any) {
+      toast({ title: "용어 등록 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingGlossary(false);
+    }
+  };
+
+  const handleUpdateGlossaryTerm = async () => {
+    if (!floatingPopover || !floatingPopover.matched) return;
+    const oldItem = floatingPopover.matched;
+    const newKo = floatingPopover.ko.trim();
+    const newEn = floatingPopover.en.trim();
+
+    if (!newKo || !newEn) {
+      toast({ title: "국문과 영문 표기를 모두 입력해주세요.", variant: "destructive" });
+      return;
+    }
+
+    if (oldItem.ko.trim() === newKo && oldItem.en.trim() === newEn) {
+      setFloatingPopover(null);
+      return;
+    }
+
+    setSavingGlossary(true);
+    try {
+      // 다른 게시글에서 이 단어가 사용되었는지 조회
+      const matchedPosts = await findPostsContainingTerm(oldItem.ko, oldItem.en);
+      const otherPosts = editing ? matchedPosts.filter((p) => p.id !== editing.id) : matchedPosts;
+
+      if (otherPosts.length > 0) {
+        setBatchConfirm({
+          open: true,
+          matchedPosts: otherPosts,
+          oldKo: oldItem.ko,
+          newKo,
+          oldEn: oldItem.en,
+          newEn,
+          updating: false,
+        });
+        setFloatingPopover(null);
+        return;
+      }
+
+      // 다른 글에 없으면 사전만 업데이트
+      const nextList = glossary.map((item) =>
+        item.id === oldItem.id ? { ...item, ko: newKo, en: newEn } : item
+      );
+      await saveGlossary(nextList);
+      queryClient.setQueryData(["glossary"], nextList);
+      toast({
+        title: "고정 용어 수정 완료",
+        description: `"${newKo}" ↔ "${newEn}"`,
+      });
+      setFloatingPopover(null);
+    } catch (err: any) {
+      toast({ title: "용어 수정 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingGlossary(false);
+    }
+  };
+
+  const handleExecuteBatchReplace = async (replaceInOtherPosts: boolean) => {
+    if (!batchConfirm) return;
+    setBatchConfirm((b) => (b ? { ...b, updating: true } : null));
+
+    try {
+      const nextList = glossary.map((item) =>
+        item.ko === batchConfirm.oldKo || item.en === batchConfirm.oldEn
+          ? { ...item, ko: batchConfirm.newKo, en: batchConfirm.newEn }
+          : item
+      );
+      await saveGlossary(nextList);
+      queryClient.setQueryData(["glossary"], nextList);
+
+      if (replaceInOtherPosts && batchConfirm.matchedPosts.length > 0) {
+        const count = await batchReplaceTermInPosts(
+          batchConfirm.matchedPosts,
+          batchConfirm.oldKo,
+          batchConfirm.newKo,
+          batchConfirm.oldEn,
+          batchConfirm.newEn
+        );
+        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        toast({
+          title: "일괄 수정 완료",
+          description: `고정 용어 사전 및 다른 게시글 ${count}개에서 단어가 일괄 교체되었습니다.`,
+        });
+      } else {
+        toast({
+          title: "고정 용어 사전 수정 완료",
+          description: "다른 게시글은 유지하고 용어 사전만 수정되었습니다.",
+        });
+      }
+
+      if (formOpen) {
+        setForm((f) => ({
+          ...f,
+          titleKo: f.titleKo.replaceAll(batchConfirm.oldKo, batchConfirm.newKo),
+          excerptKo: f.excerptKo.replaceAll(batchConfirm.oldKo, batchConfirm.newKo),
+          contentKo: f.contentKo.replaceAll(batchConfirm.oldKo, batchConfirm.newKo),
+          title: f.title.replace(new RegExp(batchConfirm.oldEn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), batchConfirm.newEn),
+          excerpt: f.excerpt.replace(new RegExp(batchConfirm.oldEn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), batchConfirm.newEn),
+          content: f.content.replace(new RegExp(batchConfirm.oldEn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), batchConfirm.newEn),
+        }));
+      }
+    } catch (err: any) {
+      toast({ title: "일괄 수정 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setBatchConfirm(null);
+    }
+  };
+
+  const handleDeleteGlossaryTerm = async () => {
+    if (!floatingPopover || !floatingPopover.matched) return;
+    const item = floatingPopover.matched;
+    setSavingGlossary(true);
+    try {
+      const nextList = glossary.filter((g) => g.id !== item.id);
+      await saveGlossary(nextList);
+      queryClient.setQueryData(["glossary"], nextList);
+      toast({ title: "고정 용어 삭제 완료", description: `"${item.ko}" 용어가 사전에서 삭제되었습니다.` });
+      setFloatingPopover(null);
+    } catch (err: any) {
+      toast({ title: "삭제 실패", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingGlossary(false);
+    }
+  };
 
   const insertFormatting = (prefix: string, suffix: string = "", placeholder: string = "") => {
     const isKo = activeLangTab === "ko";
@@ -1237,7 +1464,8 @@ export default function AdminPostsTab() {
                       rows={14}
                       value={form.contentKo}
                       onChange={(e) => setForm({ ...form, contentKo: e.target.value })}
-                      placeholder="블로그를 쓰듯이 본문 내용을 자유롭게 작성하세요...&#10;&#10;사진을 넣고 싶을 때는 원하는 줄에 커서를 두고 상단의 [🖼️ 본문 사진 삽입] 버튼을 누르시면 됩니다."
+                      onMouseUp={(e) => handleTextareaMouseUp(e, "ko")}
+                      placeholder="블로그를 쓰듯이 본문 내용을 자유롭게 작성하세요...&#10;&#10;사진을 넣고 싶을 때는 원하는 줄에 커서를 두고 상단의 [🖼️ 본문 사진 삽입] 버튼을 누르시면 됩니다.&#10;&#10;💡 본문에서 특정 단어를 드래그하면 고정 용어 사전 조회 및 등록 팝오버가 뜹니다."
                       className="text-sm leading-relaxed font-sans rounded-xl border-slate-200 focus:border-[#0f2445] min-h-[320px]"
                     />
                   </div>
@@ -1281,7 +1509,8 @@ export default function AdminPostsTab() {
                       rows={14}
                       value={form.content}
                       onChange={(e) => setForm({ ...form, content: e.target.value })}
-                      placeholder="Detailed article or report content in English...&#10;&#10;Place cursor and click [🖼️ 본문 사진 삽입] to insert pictures anywhere."
+                      onMouseUp={(e) => handleTextareaMouseUp(e, "en")}
+                      placeholder="Detailed article or report content in English...&#10;&#10;Place cursor and click [🖼️ 본문 사진 삽입] to insert pictures anywhere.&#10;&#10;💡 Drag any word or phrase to look up or register fixed glossary terms."
                       className="text-sm leading-relaxed font-sans rounded-xl border-slate-200 focus:border-[#0f2445] min-h-[320px]"
                     />
                   </div>
@@ -1420,6 +1649,158 @@ export default function AdminPostsTab() {
             >
               삭제
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 플로팅 용어 팝오버 (본문 단어 드래그 시 커서 위치에 출현) */}
+      {floatingPopover && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${floatingPopover.x}px`,
+            top: `${floatingPopover.y}px`,
+            zIndex: 9999,
+          }}
+          className="w-[330px] bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl border border-slate-200/90 animate-in fade-in zoom-in-95 duration-150 space-y-2.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div className="flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-xs font-bold text-slate-800">
+                {floatingPopover.matched ? "등록된 고정 용어 (수정 가능)" : "새 고정 용어 등록"}
+              </span>
+            </div>
+            <button
+              onClick={() => setFloatingPopover(null)}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-500 block mb-0.5">국문 표기</span>
+              <Input
+                value={floatingPopover.ko}
+                onChange={(e) => setFloatingPopover({ ...floatingPopover, ko: e.target.value })}
+                placeholder="국문 표기"
+                className="h-8 text-xs rounded-lg"
+              />
+            </div>
+            <div>
+              <span className="text-[10px] font-semibold text-slate-500 block mb-0.5">공식 영문 표기</span>
+              <Input
+                value={floatingPopover.en}
+                onChange={(e) => setFloatingPopover({ ...floatingPopover, en: e.target.value })}
+                placeholder="공식 영문 표기"
+                className="h-8 text-xs rounded-lg"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    floatingPopover.matched ? handleUpdateGlossaryTerm() : handleAddGlossaryTerm();
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+            {floatingPopover.matched ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleDeleteGlossaryTerm}
+                  disabled={savingGlossary}
+                  className="text-[11px] text-red-500 hover:text-red-700 underline font-medium"
+                >
+                  사전에서 삭제
+                </button>
+                <Button
+                  size="sm"
+                  onClick={handleUpdateGlossaryTerm}
+                  disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en}
+                  className="h-7 text-xs bg-[#0f2445] hover:bg-[#1a3a60] text-white px-3 rounded-lg"
+                >
+                  {savingGlossary ? "확인 중..." : "용어 수정"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="text-[10px] text-slate-400">번역 시 고정 치환됨</span>
+                <Button
+                  size="sm"
+                  onClick={handleAddGlossaryTerm}
+                  disabled={savingGlossary || !floatingPopover.ko || !floatingPopover.en}
+                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 rounded-lg ml-auto"
+                >
+                  {savingGlossary ? "등록 중..." : "용어 추가"}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 용어 수정 시 다른 게시글 일괄 변경 확인 모달 */}
+      <AlertDialog open={Boolean(batchConfirm)} onOpenChange={(open) => !open && setBatchConfirm(null)}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-1 border border-amber-100 shadow-2xs">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <AlertDialogTitle className="text-base font-bold text-slate-900">
+              다른 게시글에서도 일괄 수정하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600 space-y-2.5 leading-relaxed pt-1">
+              <p>
+                고정 용어가 수정되었습니다:
+              </p>
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1">
+                <div>
+                  <span className="text-slate-400">국문: </span>
+                  <span className="line-through text-red-500 mr-1.5">{batchConfirm?.oldKo}</span>
+                  <span className="font-bold text-emerald-700">→ {batchConfirm?.newKo}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">영문: </span>
+                  <span className="line-through text-red-500 mr-1.5">{batchConfirm?.oldEn}</span>
+                  <span className="font-bold text-emerald-700">→ {batchConfirm?.newEn}</span>
+                </div>
+              </div>
+              <p>
+                현재 이 단어가 포함된 다른 게시글 <strong className="text-blue-600">{batchConfirm?.matchedPosts.length}개</strong>가 발견되었습니다.
+                다른 게시글의 본문과 제목에서도 이 단어를 새 표기로 일괄 교체하시겠습니까?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-col gap-2 mt-3">
+            <Button
+              className="w-full bg-[#0f2445] hover:bg-[#1a3a60] text-white text-xs h-9 font-semibold rounded-xl shadow-xs"
+              onClick={() => handleExecuteBatchReplace(true)}
+              disabled={batchConfirm?.updating}
+            >
+              {batchConfirm?.updating ? "일괄 치환 중..." : `모든 게시글 (${batchConfirm?.matchedPosts.length}개) 일괄 치환 후 저장`}
+            </Button>
+            <div className="flex items-center gap-2 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 text-xs h-8.5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                onClick={() => handleExecuteBatchReplace(false)}
+                disabled={batchConfirm?.updating}
+              >
+                사전만 수정하고 유지
+              </Button>
+              <Button
+                variant="ghost"
+                className="flex-1 text-xs h-8.5 rounded-xl text-slate-500 hover:text-slate-900"
+                onClick={() => setBatchConfirm(null)}
+                disabled={batchConfirm?.updating}
+              >
+                취소
+              </Button>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
