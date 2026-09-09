@@ -107,20 +107,6 @@ export default function AdminLoginForm() {
               >
                 {loading ? "로그인 중..." : "로그인"}
               </Button>
-
-              {import.meta.env.DEV && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full mt-2 text-xs border-dashed text-slate-500 hover:text-slate-800"
-                  onClick={() => {
-                    sessionStorage.setItem("dev_mock_admin", "true");
-                    window.location.reload();
-                  }}
-                >
-                  🧪 [개발 모드 QA 전용] 테스트 계정으로 즉시 진입
-                </Button>
-              )}
             </form>
           </CardContent>
         </Card>
