@@ -220,7 +220,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-white text-slate-800 text-[15px]">
-      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-50 shadow-2xs">
+      <header className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200/80 z-50 shadow-2xs">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/">
@@ -341,7 +341,7 @@ export default function Layout({ children }: LayoutProps) {
       {!isAdmin && !snsDismissed && (
         <aside
           aria-label="Social Media Quick Links"
-          className="fixed right-3.5 sm:right-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-1.5 z-40 bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all"
+          className="fixed right-3.5 sm:right-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-1.5 z-40 bg-white p-2 rounded-2xl shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all"
         >
           <div className="flex items-center justify-between gap-1 pb-1 border-b border-slate-100 px-0.5">
             <span className="text-[9px] font-bold text-slate-400 tracking-tighter">SNS</span>

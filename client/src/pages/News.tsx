@@ -119,7 +119,7 @@ export default function News() {
                 >
                   <div className="w-40 h-28 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
                     {article.image_url ? (
-                      <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
+                      <img src={article.image_url} alt={article.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="w-8 h-8 text-gray-300" />
                     )}

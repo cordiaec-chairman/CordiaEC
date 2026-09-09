@@ -112,7 +112,7 @@ export default function OverseasKorean() {
                 >
                   <div className="w-40 h-28 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
                     {post.image_url ? (
-                      <img src={post.image_url} alt={post.title} className="w-full h-full object-cover" />
+                      <img src={post.image_url} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="w-8 h-8 text-gray-300" />
                     )}

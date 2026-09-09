@@ -1,121 +1,186 @@
 ---
 name: persona-scenario-testing
-description: "기능 개발 후 다양한 사용자 페르소나(Persona)와 시나리오를 설계하고, 브라우저를 직접 띄워 물리적 상태 단언(Physical Assertion) 및 Gap 분석을 수행하는 엄격한 QA 스킬"
+description: "기능 개발 후 사용자 관점의 UX 연속성(마찰 최소화)과 시스템 관점의 핵심 가치 보존(프랑켄슈타인 덧대기 방지)을 상태 그래프와 물리적 단언문으로 기계적 검증하는 영구적 범용 테스팅 프레임워크"
 ---
 
-# 페르소나 기반 시나리오 테스팅 스킬 (Persona Scenario Testing)
+# 영구적 범용 페르소나 기능 검증 프레임워크
+# (Universal Persona-Driven Feature Verification Framework)
 
-AI 에이전트의 주관적이고 낙관적인 판단("잘 된 것 같습니다")을 배제하고, **오픈소스 QA 프레임워크(browser-use, Stagehand, Midscene)의 핵심 엔지니어링 원칙(물리적 상태 검증, 불변식 검증, 에러 인터셉트)**을 적용하여 변칙성을 통제하는 엄격한 테스트 프로토콜입니다.
-
----
-
-## 4대 불변 검증 원칙 (Invariants)
-
-테스트 실행 시 AI는 단순 눈대중이 아닌, 브라우저 콘솔에서 다음 **4대 물리적 검증 코드**를 실행하여 `PASS` 여부를 판정해야 합니다:
-
-### 1. 뷰포트 레이아웃 물리 검증 (Viewport Alignment)
-모달, 팝오버 등 오버레이 UI가 화면 밖이나 최하단으로 밀려 떨어지지 않았는지 좌표를 검증합니다.
-```javascript
-// 브라우저 evaluate로 실행
-(() => {
-  const modal = document.querySelector('[role="dialog"]');
-  if (!modal) return { pass: false, reason: "모달 DOM 없음" };
-  const rect = modal.getBoundingClientRect();
-  const centerY = (rect.top + rect.bottom) / 2;
-  const viewportCenterY = window.innerHeight / 2;
-  const isCentered = Math.abs(centerY - viewportCenterY) < 80;
-  const isInViewport = rect.top >= 0 && rect.bottom <= window.innerHeight + 50;
-  return {
-    pass: isCentered && isInViewport,
-    rect: { top: rect.top, bottom: rect.bottom, height: rect.height },
-    centerY,
-    viewportCenterY,
-    reason: !isCentered ? "모달이 화면 중앙이 아닌 곳(하단 등)으로 밀림" : "정상"
-  };
-})();
-```
-
-### 2. 상호작용성 및 포커스 트랩 검증 (Interactivity & Pointer-Events)
-요소가 눈에 보이더라도 `pointer-events: none`이나 Radix Focus Trap에 의해 먹통인지 검증합니다.
-```javascript
-(() => {
-  const popover = document.querySelector('[style*="z-index: 70"]') || document.querySelector('[style*="z-index: 9999"]');
-  const input = popover?.querySelector('input');
-  if (!input) return { pass: false, reason: "입력창 요소 없음" };
-  
-  const style = window.getComputedStyle(input);
-  const pointerEventsOk = style.pointerEvents !== 'none';
-  input.focus();
-  const hasFocus = document.activeElement === input;
-  
-  return {
-    pass: pointerEventsOk && hasFocus,
-    pointerEvents: style.pointerEvents,
-    hasFocus,
-    reason: !pointerEventsOk ? "pointer-events: none 차단됨" : !hasFocus ? "포커스 트랩으로 입력 포커스 불가" : "정상"
-  };
-})();
-```
-
-### 3. 데이터 보존 불변식 검증 (Data Preservation Invariant)
-"국문만 수정" 페르소나 실행 시, 기존 영문이 의도치 않게 새로 번역되어 덮어쓰여졌는지 원문과 대조합니다.
-```javascript
-// 수정 전 영문 원문 (beforeEn)과 저장 후 영문 (afterEn) 일치 검증
-if (scenario === "keep_english_on_minor_edit") {
-  assert(beforeEn.trim() === afterEn.trim(), "CRITICAL: 기존 영문이 자동 번역으로 덮어쓰여져 유실됨!");
-}
-```
-
-### 4. 콘솔 무결성 (Console & Network Errors)
-테스트 수행 중 `console.error` 또는 HTTP 4xx/5xx 실패가 1건이라도 발생하면 실패 처리.
+본 프레임워크는 특정 프로젝트나 특정 기능에 종속되지 않는 **영구적 소프트웨어 공학 표준**입니다.  
+새로운 기능이 추가되거나 기존 구조가 개편될 때마다, **"사용자 경험의 연속성(인지 마찰 0)"**과 **"시스템 본질적 핵심 엔진의 무결성(반-프랑켄슈타인)"**을 수학적 상태 그래프와 브라우저 물리 계측을 통해 기계적으로 수호합니다.
 
 ---
 
-## 실행 프로세스 (Execution Lifecycle)
+## 1. 프레임워크 핵심 설계 철학: 2대 보편 공리 (Universal Axioms)
+
+모든 코드 변경과 신규 UI 파츠는 다음 2대 공리를 통과하지 못하면 **즉시 배포 반려(HARD REJECT)** 대상이 됩니다.
 
 ```
-[1. 페르소나 정의]
-   ↓ (목적, 예상 행동, 금기 사항(Anti-patterns) 명시)
-[2. 브라우저 subagent 가동 & 액션 실행]
-   ↓ (실제 마우스 클릭, 텍스트 드래그, 우클릭, 타이핑)
-[3. 브라우저 내부 물리 검증 (JS Assertion 실행)]
-   ↓ (좌표, pointer-events, activeElement, 데이터 diff 측정)
-[4. 실패 원인 공학적 분석 (CSS 충돌, FocusScope, 상태 불일치)]
-   ↓
-[5. 사용자에게 사실 기반 정량 보고서 제출]
+                  ┌──────────────────────────────────────────────┐
+                  │          소프트웨어 기능 검증의 2대 공리          │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                 ┌───────────────────────┴───────────────────────┐
+                 ▼                                               ▼
+   [공리 1: 사용자 인지 관점]                        [공리 2: 시스템 구조 관점]
+  인지 마찰 불변의 법칙                             핵심 가치 보존 및 반-프랑켄슈타인
+(Cognitive Friction Invariant)                    (Core Value & Anti-Frankenstein)
+"10배의 가치 제공 없는 추가 단계,                  "새 부품을 덧대느라 본래의 주연 엔진을
+ 망설임, 근육 기억 파괴는 절대 불허"               가리거나, 느리게 하거나, 오염시키지 마라"
+```
+
+### 공리 1. 인지 마찰 불변의 법칙 (Cognitive Friction Invariant)
+* **정의**: 신규 기능의 추가가 기존 사용자의 습관적 근육 기억(Muscle Memory)을 교란하거나, 기존 동선의 클릭 수·스크롤 거리·선택 망설임(Hesitation)을 증가시켜서는 안 된다.
+* **원칙**: 사용자는 최소한의 조작으로 최대의 결과를 원한다. 신규 기능이 아무리 고도화되어 있어도, 기존 일상 작업을 수행하려는 유저에게는 완벽히 투명(Invisible)하거나 방해되지 않아야 한다.
+
+### 공리 2. 핵심 가치 보존 및 반(反)프랑켄슈타인 법칙 (Core Value Preservation & Anti-Frankenstein)
+* **정의**: 새로운 부품을 덧대느라(Additive Patching) 이 프로덕트의 존재 이유인 본질적 핵심 엔진을 가리거나, 무겁게 만들거나, 복잡하게 오염시켜서는 안 된다.
+* **원칙**: 신규 기능은 언제나 '조연'이어야 한다. 조연이 주연의 자리를 침범하여 메인 렌더링 성능을 갉아먹거나, 전역 상태를 복잡하게 얽히게 하거나, 기존 데이터 필드를 파괴하면 즉각 분리·격리되어야 한다.
+
+---
+
+## 2. 4대 보편 페르소나 아키타입 (The 4 Universal Archetypes)
+
+도메인(이커머스, SaaS, 핀테크, CMS, 소셜 등)에 관계없이 모든 사용자는 다음 4가지 행동 사분면으로 모델링됩니다:
+
+```
+                          [숙련도: 높음 / 헤비 유저]
+                                      ▲
+                                      │
+              [아키타입 B]            │            [아키타입 C]
+          본질적 파워 생산자           │          신규 기능 수혜자
+        (Core Power Producer)         │        (Target Beneficiary)
+                                      │
+[기존 가치 보존 중심] ────────────────┼──────────────── [신규 기능 탐색 중심]
+                                      │
+              [아키타입 A]            │            [아키타입 D]
+          관성적 미니멀리스트          │         경계선 / 혼돈 탐색자
+        (Habitual Minimalist)         │       (Boundary & Chaos Explorer)
+                                      │
+                                      ▼
+                          [숙련도: 낮음 / 단순 유저]
+```
+
+### [아키타입 A] 관성적 미니멀리스트 (Habitual Minimalist)
+* **특징**: "날 그냥 내버려 둬라." 새 기능에 아무 관심이 없으며, 수백 번 해오던 본인의 단순 작업만 가장 빠르게 끝내고 나가려는 유저.
+* **핵심 질문**: 
+  1. 새 기능이 이 유저의 눈앞에 걸리적거리거나 동선을 가로막는가?
+  2. 원래 1번 클릭으로 끝나던 동작에 추가 확인 팝업이나 선택지가 생겼는가?
+  3. 새 기능을 아예 몰라도 기존 방식 그대로 0초의 망설임 없이 작업이 완료되는가?
+
+### [아키타입 B] 본질적 파워 생산자 (Core Power Producer)
+* **특징**: "핵심 엔진의 한계를 시험한다." 이 소프트웨어의 본질적 가치(대용량 데이터, 고난도 에디팅, 대량 트랜잭션 등)를 극한으로 사용하는 헤비 유저.
+* **핵심 질문**:
+  1. 신규 부품(파츠)의 연산이나 스타일 때문에 메인 엔진의 렌더링 속도나 반응성이 저하되었는가?
+  2. 신규 파츠의 CSS/레이어가 본체 도구의 시야를 가리거나 작업 영역을 침범하는가?
+  3. 신규 저장 로직이 기존의 방대한 데이터베이스 필드나 릴레이션을 변조(0-byte 덮어쓰기)할 위험이 있는가?
+
+### [아키타입 C] 신규 기능 수혜자 (Target Beneficiary)
+* **특징**: "신규 기능의 혜택을 100% 누리겠다." 이번 업데이트를 목적의식을 가지고 적극적으로 사용하는 타겟 유저.
+* **핵심 질문**:
+  1. "최소 조작 - 최대 효율"이 달성되었는가? (고차원적 결과를 가장 직관적인 제스처로 얻는가?)
+  2. 작업을 완료하기 위해 화면을 이탈하거나 불필요한 서브 모달/설정 탭을 전전해야 하는가?
+  3. 설명서나 가이드 없이도 다음 행동이 자연스럽게 유도(Affordance)되는가?
+
+### [아키타입 D] 경계선 / 혼돈 탐색자 (Boundary & Chaos Explorer)
+* **특징**: "예외 상황과 한계를 찌른다." 비정상적 입력, 중도 취소, 연타, 네트워크 단절, 특수문자 등을 주입하는 변칙적 유저.
+* **핵심 질문**:
+  1. 취소/뒤로가기 시 화면에 닫히지 않는 고아 요소(Orphan DOM: 잔류 백드롭, 갇힌 팝오버)가 남는가?
+  2. 비정상적 조작 시 에러가 조용히 격리(Fault-Tolerant)되는가, 아니면 앱 전체가 크래시(White-out)되는가?
+  3. 포커스 트랩, z-index 충돌, `pointer-events: none` 차단 등 브라우저 물리 결함이 발생하는가?
+
+> 💡 *도메인별(이커머스, SaaS, RBAC 권한, 미디어 에디터 등) 구체적 적용 사례는 [domain-examples.md](file:///Users/grasshop/CordiaEC_portfolio/.agents/skills/persona-scenario-testing/references/domain-examples.md)를 참조하십시오.*
+
+---
+
+## 3. 상태-행동 그래프 엔지니어링 (State-Action Graph Engineering)
+
+페르소나 테스트는 단순 프롬프트 실행이 아니라, **사용자 인지 상태와 시스템 물리 상태를 유향 그래프($G = (V, E, I)$)로 수학적으로 모델링**하여 수행합니다.
+
+* **노드 ($V$)**: 화면 상태 (초기화면, 모달 활성, 작업 진행 중, 영속화 성공, 에러 발생)
+* **엣지 ($E$)**: 사용자 물리적 행동 (Click, Type, Scroll, Escape, Wait)
+* **불변식 ($I$)**: 각 노드에 머무는 동안 반드시 만족해야 하는 브라우저 물리 단언문
+
+```
+[탐지해야 하는 4대 그래프 병리 현상]
+1. 교착 노드 (Deadlock / Trap State): 진입 후 취소/ESC/뒤로가기가 불가능한 갇힌 화면
+2. 유령 전이 (Phantom Action): 버튼을 눌렀으나 아무런 시각적/데이터적 피드백이 없는 상태
+3. 인지적 우회로 (Cognitive Detour): 기존 1-Click 완료 경로가 신규 기능으로 인해 3-Click 이상으로 팽창한 상태
+4. 고아 잔여물 (Orphan DOM Artifact): 모달이나 팝오버를 닫았는데 화면 보이지 않는 오버레이가 클릭을 차단하는 상태
+```
+
+> 💡 *그래프 모델링 상세 기법 및 Mermaid 템플릿은 [graph-engineering.md](file:///Users/grasshop/CordiaEC_portfolio/.agents/skills/persona-scenario-testing/references/graph-engineering.md)를 참조하십시오.*
+
+---
+
+## 4. 5차원 평가 루브릭 및 물리적 단언문 (5-Dimension Rubric & Deterministic Assertions)
+
+LLM 에이전트의 주관적 착각("잘 된 것 같습니다")을 배제하기 위해, **5가지 차원의 물리적 계측값**으로만 합격 여부를 판정합니다:
+
+| 평가 차원 | 기계적 검증 지표 | 엄격한 합격 기준 (PASS Invariant) |
+|---|---|---|
+| **1. 조작 경제성 (Click Economy)** | 클릭 수, 스크롤 거리, 망설임 초(Hesitation) | 기존 기본 동선 클릭 증가 **0회**, 불필요한 서브 모달 진입 **0회** |
+| **2. 시각적 위계 (Visual Hierarchy)** | 주연 기능 vs 조연 기능의 면적비, 시각 노이즈 | 신규 부가 파츠 화면 점유율 **25% 이하**, 주연 액션의 시각적 선명도 유지 |
+| **3. 물리적 정합성 (Physical Layout)** | 뷰포트 지오메트리, `pointer-events`, 포커스 트랩 | 모달 중앙 정렬 오프셋 **< 30px**, 타겟 hit-test 차단 레이어 **0개** |
+| **4. 데이터 비파괴성 (Data Integrity)** | 기존 미수정 필드의 체크섬, 백엔드 페이로드 | 비수정 데이터 필드 변조 **0-byte**, 롤백 보장성 확보 |
+| **5. 아키텍처 결합도 (Decoupling)** | 오류 격리도, 전역 상태 오염, 프랑켄슈타인 징후 | 신규 모듈 런타임 크래시 시에도 메인 엔진 정상 작동 (격리도 **100%**) |
+
+> 💡 *브라우저 자바스크립트 레벨의 실제 물리 단언 코드는 [physical-assertions.md](file:///Users/grasshop/CordiaEC_portfolio/.agents/skills/persona-scenario-testing/references/physical-assertions.md)를 참조하십시오.*  
+> 💡 *아키텍처 덧대기 현상 감사는 [anti-frankenstein-audit.md](file:///Users/grasshop/CordiaEC_portfolio/.agents/skills/persona-scenario-testing/references/anti-frankenstein-audit.md)를 참조하십시오.*
+
+---
+
+## 5. 인간 개입형(HITL: Human-in-the-Loop) 4단계 실행 프로토콜
+
+AI 에이전트는 결코 자의적으로 테스트를 끝내고 일방 통보하지 않으며, **단계별 검증 그래프를 사장님과 동기화**하면서 진행합니다:
+
+```
+[Phase 1: 기능 분해 및 시나리오 그래프 제안]
+   - 신규 기능의 "주연(Core)"과 "조연(Extension)" 경계를 명확히 분리
+   - 4대 아키타입별 상태 전이 그래프(Mermaid) 및 사전 단언식을 사장님께 제출
+   - 🛑 [체크포인트 1]: 사장님의 그래프 승인 및 엣지 케이스 조율 (승인 전 브라우저 구동 금지)
+
+[Phase 2: 브라우저 자율 계측 실행]
+   - 실제 타겟 환경(운영/스테이징/인증 세션이 연결된 실환경)에서 브라우저 서브에이전트 가동
+   - 4대 아키타입의 사용자 행동을 실제로 밟으며 스크린샷, DOM 지오메트리, 콘솔 에러, 페이로드 덤프 수집
+
+[Phase 3: 퇴행(Regression) 및 병리 분석]
+   - "기존 유저의 근육 기억이 파괴되었는가?"
+   - "새 파츠가 메인 엔진을 침범하여 프랑켄슈타인을 만들었는가?"
+   - 결함을 [치명적 결함 / UX 인지 마찰 / 아키텍처 오염] 3개 레벨로 분류
+
+[Phase 4: 정량 진단 보고 및 의사결정 선택지 제시]
+   - 5차원 루브릭 측정치 및 스크린샷 증거 제시
+   - "얻은 효율 vs 치른 마찰"의 정밀 대조표와 함께 최종 선택지(A안/B안/C안) 상정
 ```
 
 ---
 
-## 페르소나 템플릿 예시
+## 6. 표준 진단 보고서 규격 (Standard Assessment Artifact)
 
-1. **오타 수정형 페르소나 (Minor Fixer)**
-   - **목표**: 국문 제목의 오타 1글자만 수정하고 저장.
-   - **검증**: `[수정사항만 저장 (영문 유지)]` 클릭 ➔ 영문 데이터 변경량 0 byte 확인.
-2. **글로벌 전면 개편 페르소나 (Full Synchronizer)**
-   - **목표**: 국문 본문 단락을 대폭 수정하고 영문도 통일.
-   - **검증**: `[번역 후 저장 (영문 최신화)]` 클릭 ➔ 영문 자동 갱신 및 등록된 고정 용어 치환율 100% 확인.
-3. **용어집 수시 등록 페르소나 (Glossary Power User)**
-   - **목표**: 본문 단어 드래그 ➔ 우클릭 ➔ 팝오버 입력 ➔ 등록.
-   - **검증**: 팝오버 출현 좌표가 커서 근처인가? 인풋 포커스 정상인가? 닫기 버튼 작동하는가?
-4. **변칙적 조작 페르소나 (Adversarial / Chaos User)**
-   - **목표**: 모달 바깥 연타, 1글자만 드래그 후 우클릭, 빈 텍스트 저장 시도.
-   - **검증**: 모달 갇힘 현상 없음, 유효성 검증 토스트 출현, 비정상 API 호출 차단.
-
----
-
-## 보고서 출력 양식 (Output Format)
+테스트 완료 시 반드시 다음 규격의 아티팩트(`walkthrough.md` 또는 `persona_test_report.md`)로 보고합니다:
 
 ```markdown
-### 🧪 페르소나 시나리오 테스트 결과 보고
+# 📊 [기능명] 페르소나 기반 기능 검증 진단 보고서
 
-| 페르소나 | 시나리오 | 물리 검증 결과 (좌표/포커스/데이터) | 판정 |
+## 1. 2대 공리 준수 여부
+- [x] **공리 1 (인지 마찰 불변)**: 기존 동선 대비 스텝 증가 0회, 망설임 유발 요소 없음.
+- [x] **공리 2 (반-프랑켄슈타인)**: 신규 파츠가 메인 엔진을 침범하지 않고 완전 격리됨.
+
+## 2. 4대 페르소나 시뮬레이션 결과 매트릭스
+| 페르소나 아키타입 | 핵심 시나리오 경로 | 5차원 루브릭 계측 결과 | 판정 |
 |---|---|---|---|
-| 오타 수정자 | 국문 1자 수정 후 저장 | 영문 원문 diff: 0 바이트 보존 | PASS |
-| 용어 등록자 | 단어 드래그 후 우클릭 | rect.top: 240px (뷰포트 중앙), 포커스 획득 | PASS |
-| 변칙 조작자 | 바깥 클릭 및 미입력 저장 | alert-dialog 정상 방어, 콘솔 에러 0건 | PASS |
+| **A. 관성적 미니멀리스트** | 기존 작업 1스텝 완료 | 클릭 수: 1회, 추가 팝업: 0회, 기존 데이터 불변 | **PASS** |
+| **B. 본질적 파워 생산자** | 한계치 데이터 입력/수행 | 렌더링 지연: 45ms (<100ms), 레이아웃 침해 0px | **PASS** |
+| **C. 신규 기능 수혜자** | 신규 플로우 완주 | 목표 달성까지 2스텝, 화면 이탈 0회 | **PASS** |
+| **D. 경계선/혼돈 탐색자** | 취소/ESC/변칙 입력 | 고아 백드롭 0개, activeElement 포커스 정상 복구 | **PASS** |
 
-#### 🔍 발견된 Gap 및 개선 필요 지점
-- [ ] 문제점: (있을 경우 구체적 CSS 클래스 또는 상태 불일치 명시)
-- [ ] 권장 해결책:
+## 3. 물리적 단언문 계측 증거 (Physical Ground Truths)
+- **모달 뷰포트 중심 오차**: X: 0px, Y: 0px (완벽한 fixed 중앙 정렬)
+- **포커스 및 클릭 차단 여부**: 최상단 히트 테스트 통과 (`pointer-events: auto`)
+- **데이터 페이로드 무결성**: 비수정 필드 0-byte 변조 보존 확인
+
+## 4. 최종 엔지니어링 판정 및 조치 권고
+- [PASS / CONDITIONAL PASS / REJECT]
+- 권고 사항: ...
 ```

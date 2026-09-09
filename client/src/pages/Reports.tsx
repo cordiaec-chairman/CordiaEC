@@ -118,6 +118,8 @@ export default function Reports() {
                       <img
                         src={report.image_url}
                         alt={report.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
