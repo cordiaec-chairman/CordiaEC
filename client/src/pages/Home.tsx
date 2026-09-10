@@ -159,7 +159,9 @@ export default function Home() {
           {/* 1 Row x 6 Columns Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-10">
             {initiatives.map((init: Initiative) => {
-              const label = init.label || pickField(init, "title", lang);
+              const label = lang === "ko"
+                ? (init.label || init.title_ko || init.title)
+                : (init.title || init.label);
               return (
                 <Link
                   key={init.slug}
