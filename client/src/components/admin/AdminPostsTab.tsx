@@ -1247,10 +1247,10 @@ export default function AdminPostsTab() {
                   className="border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 hover:text-blue-900 text-xs h-8 px-2.5 rounded-lg shadow-2xs font-semibold"
                   onClick={handleTranslateKoToEn}
                   disabled={translating || !form.titleKo}
-                  title="작성하신 국문 내용을 기반으로 영문 필드를 자동 번역합니다."
+                  title="현재 국문 내용을 바탕으로 영문 내용을 즉시 번역합니다. (결과 미리보기 및 직접 수정 가능)"
                 >
                   <Languages className="w-3.5 h-3.5 mr-1 text-blue-600" />
-                  {translating ? "번역 중..." : "자동 번역"}
+                  {translating ? "번역 중..." : "번역하기"}
                 </Button>
               ) : (
                 <Button
@@ -1260,10 +1260,10 @@ export default function AdminPostsTab() {
                   className="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 text-xs h-8 px-2.5 rounded-lg shadow-2xs font-semibold"
                   onClick={handleTranslateEnToKo}
                   disabled={translating || !form.title}
-                  title="작성하신 영문 내용을 기반으로 국문 필드를 자동 번역합니다."
+                  title="현재 영문 내용을 바탕으로 국문 내용을 즉시 번역합니다. (결과 미리보기 및 직접 수정 가능)"
                 >
                   <Languages className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                  {translating ? "번역 중..." : "자동 번역"}
+                  {translating ? "번역 중..." : "번역하기"}
                 </Button>
               )}
 

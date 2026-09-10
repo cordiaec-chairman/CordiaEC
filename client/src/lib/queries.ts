@@ -961,6 +961,24 @@ export const DEFAULT_YOUTUBE_VIDEOS: YouTubeVideo[] = [
   },
 ];
 
+function applyLocalSeedOrder(videos: YouTubeVideo[]): YouTubeVideo[] {
+  if (typeof window === "undefined") return videos;
+  try {
+    const raw = localStorage.getItem("cordia_youtube_seed_order");
+    if (!raw) return videos;
+    const orderMap: Record<string, number> = JSON.parse(raw);
+    return [...videos]
+      .sort((a, b) => {
+        const orderA = orderMap[a.id] ?? a.display_order ?? 999;
+        const orderB = orderMap[b.id] ?? b.display_order ?? 999;
+        return orderA - orderB;
+      })
+      .map((v, idx) => ({ ...v, display_order: idx + 1 }));
+  } catch {
+    return videos;
+  }
+}
+
 export async function getYoutubeVideos(includeInactive = false): Promise<YouTubeVideo[]> {
   try {
     let query = supabase
@@ -976,15 +994,15 @@ export async function getYoutubeVideos(includeInactive = false): Promise<YouTube
     const { data, error } = await query;
     if (error) {
       console.warn("youtube_videos query error (using default fallback):", error.message);
-      return DEFAULT_YOUTUBE_VIDEOS;
+      return applyLocalSeedOrder(DEFAULT_YOUTUBE_VIDEOS);
     }
     if (!data || data.length === 0) {
-      return DEFAULT_YOUTUBE_VIDEOS;
+      return applyLocalSeedOrder(DEFAULT_YOUTUBE_VIDEOS);
     }
     return data as YouTubeVideo[];
   } catch (err) {
     console.error("youtube_videos fetch exception:", err);
-    return DEFAULT_YOUTUBE_VIDEOS;
+    return applyLocalSeedOrder(DEFAULT_YOUTUBE_VIDEOS);
   }
 }
 

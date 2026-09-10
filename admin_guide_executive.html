@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CordiaEC 웹사이트 관리자 통합 운영 가이드</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+    @media print {
+      body { background-color: #fff; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      .shadow-xl, .shadow-2xs, .shadow-sm { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 lg:p-10">
+  <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
+    
+    <!-- Header Banner -->
+    <header class="bg-gradient-to-r from-[#0b172a] via-[#0f2445] to-[#1e3a8a] text-white p-8 sm:p-12 relative overflow-hidden">
+      <div class="relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-semibold tracking-wider text-slate-200 border border-white/15 mb-4">
+          <span>CORDIAEC OFFICIAL ADMIN GUIDE</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-3">
+          CordiaEC 웹사이트 관리자 운영 가이드 & 작성 매뉴얼
+        </h1>
+        <p class="text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
+          관리자 및 운영 실무진을 위한 웹사이트(k-dia.net) 실시간 콘텐츠 등록, 다국어 자동 번역, 필드별 작성 가이드 및 추천 작성 순서 통합 설명서
+        </p>
+        <div class="mt-6 flex flex-wrap gap-4 text-xs font-medium text-slate-300">
+          <div class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+            <span>🌐 접속 주소:</span>
+            <a href="https://k-dia.net/admin" target="_blank" class="text-white font-bold underline">k-dia.net/admin</a>
+          </div>
+          <div class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+            <span>🔒 보안 세션:</span>
+            <span class="text-white font-semibold">브라우저 종료 시 즉시 자동 로그아웃</span>
+          </div>
+          <div class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+            <span>✨ AI 연동:</span>
+            <span class="text-white font-semibold">DeepL API 기반 한/영 실시간 동기화</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Quick Action / Print Bar -->
+    <div class="no-print bg-slate-100 border-b border-slate-200 px-6 sm:px-8 py-3 flex items-center justify-between text-xs text-slate-600">
+      <span>💡 브라우저 인쇄(<kbd class="px-1.5 py-0.5 bg-white rounded border border-slate-300 font-mono">Cmd + P</kbd>)를 누르면 여백이 정돈된 깔끔한 PDF 문서로 저장할 수 있습니다.</span>
+      <button onclick="window.print()" class="bg-[#0f2445] text-white font-semibold px-3.5 py-1.5 rounded-lg hover:bg-blue-900 transition-colors shadow-2xs">
+        PDF 인쇄하기
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-6 sm:p-10 space-y-12">
+
+      <!-- Section 1: Executive Summary -->
+      <section>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-100">
+            01
+          </div>
+          <h2 class="text-xl font-bold text-slate-900">핵심 기능: 관리자가 꼭 알아야 할 3가지</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 hover:border-blue-300 transition-all">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center mb-3 text-lg font-bold">
+              ✨
+            </div>
+            <h3 class="font-bold text-slate-900 text-base mb-1.5">한국어만 써도 영문 자동 완성</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              영어를 전혀 몰라도 문제없습니다. 한국어로 글이나 영상을 등록하고 <b>[저장]</b>만 누르면, 세계 최고 수준의 DeepL AI가 즉시 영문 번역본을 생성하여 한/영 버전에 동시 반영합니다.
+            </p>
+          </div>
+
+          <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 hover:border-blue-300 transition-all">
+            <div class="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center mb-3 text-lg font-bold">
+              ▶
+            </div>
+            <h3 class="font-bold text-slate-900 text-base mb-1.5">유튜브 링크만 넣으면 끝</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              유튜브 주소만 복사해 넣으면 시스템이 영상 ID와 대표 썸네일을 1초 만에 자동 추출합니다. 홈 화면 슬라이딩 쇼케이스에 실시간으로 세미나 영상이 전시됩니다.
+            </p>
+          </div>
+
+          <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 hover:border-blue-300 transition-all">
+            <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 text-lg font-bold">
+              🛡️
+            </div>
+            <h3 class="font-bold text-slate-900 text-base mb-1.5">철통같은 보안 세션</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              공용 PC나 출장지에서 로그인을 깜빡 잊고 나가도 안심할 수 있습니다. <b>웹 브라우저를 닫는 즉시 로그인 토큰이 자동 파기</b>되어 비인가 접근을 원천 차단합니다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Translation Buttons Clarification -->
+      <section class="bg-gradient-to-br from-indigo-50/70 via-blue-50/50 to-slate-50 rounded-2xl p-6 sm:p-8 border border-blue-100">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+            02
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">번역 기능 완벽 정리: 상단 [번역하기] vs 기본 [저장 시 자동 번역]</h2>
+            <p class="text-xs text-slate-500 mt-0.5">상단 버튼은 <b>'수동 즉시 확인용'</b>이고, 자동번역은 <b>'디폴트로 켜두면 알아서 해주는 기능'</b>입니다.</p>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-blue-600 text-white rounded-xl text-xs font-medium mb-5 shadow-xs flex items-center gap-2.5">
+          <span class="text-lg">💡</span>
+          <span class="leading-relaxed">
+            <b>핵심 정의:</b> 상단에 있는 버튼은 자동번역이 아니라 <b>[번역하기]</b> 버튼(직접 보고 고치는 용도)이고, <b>[자동 번역]</b>은 말 그대로 관리자님이 신경 안 써도 디폴트를 자동으로 해두면 저장할 때 알아서 번역해주는 기능입니다.
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Button 1 -->
+          <div class="bg-white p-5 rounded-xl border border-blue-200 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+                  <span>버튼 ①</span> <span>상단 탭 옆 [✨ 번역하기]</span>
+                </span>
+                <span class="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">수동 즉시 번역 (미리보기·수정용)</span>
+              </div>
+              <h4 class="font-bold text-slate-900 text-sm mb-1.5">"영어로 어떻게 번역되는지 지금 바로 확인하고 고치고 싶을 때"</h4>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                국문을 작성하다가 이 버튼을 누르면, <b>그 즉시 영문 탭으로 번역본이 채워집니다.</b> 영문 탭으로 이동해 번역된 문장을 눈으로 직접 검토하고, 특정 단어나 문구를 직접 교정·수정하고 싶을 때 사용합니다.
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
+              <span>👉</span> <b>추천 상황:</b> 중요한 공식 성명이나 영문 표현을 사전에 꼼꼼히 확인하고 교정하고 싶을 때
+            </div>
+          </div>
+
+          <!-- Button 2 -->
+          <div class="bg-white p-5 rounded-xl border border-indigo-200 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-200">
+                  <span>기본 옵션 ②</span> <span>우측/하단 [저장 시 자동 번역] (기본 켜짐)</span>
+                </span>
+                <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">전자동 백그라운드 번역 (신경 쓸 필요 없음)</span>
+              </div>
+              <h4 class="font-bold text-slate-900 text-sm mb-1.5">"내가 신경 안 써도 디폴트로 켜두면 알아서 번역해서 저장해라"</h4>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                영문 탭을 굳이 열어보실 필요가 전혀 없습니다. 한국어로만 글을 작성하고 하단 <b>[저장]</b> 버튼만 누르면, 시스템이 DeepL 번역을 알아서 수행하여 국문·영문 양쪽 버전을 동시에 완성해 웹사이트에 배포합니다.
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
+              <span>👉</span> <b>추천 상황:</b> 바쁜 일상 업무 중 한국어 기사만 빠르게 등록하고 곧바로 업무를 마치고 싶을 때 (가장 추천하는 모드)
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3.5 bg-blue-100/60 rounded-xl text-xs text-blue-900 flex items-start gap-2 border border-blue-200/60">
+          <span class="text-base leading-none shrink-0">✨</span>
+          <span>
+            <b>관리자님을 위한 맞춤 요약:</b> "복잡하게 영문 확인 안 하고 빠르고 편하게 올리겠다"면 <b>상단 [번역하기] 버튼은 건드릴 필요 없이, 국문만 작성하고 하단 [저장]만 누르시면</b> 시스템이 영문 번역까지 알아서 완벽하게 처리해 드립니다!
+          </span>
+        </div>
+      </section>
+
+      <!-- Section 3: Annotated Input Fields Guide -->
+      <section>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-100">
+            03
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">글 작성 화면 필드별 상세 안내: "여기엔 뭘 넣어야 하나요?"</h2>
+            <p class="text-xs text-slate-500 mt-0.5">글 작성 창은 <b>좌측(본문 콘텐츠 작성)</b>과 <b>우측(게시 및 파일 설정)</b>의 2개 열로 구성되어 있습니다.</p>
+          </div>
+        </div>
+
+        <!-- Visual Layout Map Mockup -->
+        <div class="p-5 bg-slate-900 text-white rounded-2xl mb-6 shadow-md border border-slate-800">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4 text-xs">
+            <span class="font-bold flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+              <span class="ml-2 text-slate-300">게시글 작성 화면 영역 매핑도</span>
+            </span>
+            <span class="text-slate-400">모달 2단 분할 구조</span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs font-mono">
+            <!-- Left Column Map (7 cols) -->
+            <div class="lg:col-span-7 bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-700 text-slate-300 font-sans font-bold">
+                <span>[좌측] 본문 콘텐츠 캔버스</span>
+                <span class="text-[11px] text-blue-400 font-normal">글 내용 작성 중심</span>
+              </div>
+              
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600 flex items-center justify-between">
+                <span class="font-bold text-yellow-300 font-sans">❶ [국문 작성] / [영문 작성] 탭</span>
+                <span class="text-[11px] text-slate-300">기본은 국문 작성 선택</span>
+              </div>
+
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600">
+                <div class="font-bold text-yellow-300 font-sans mb-1">❷ 제목 (국문) *</div>
+                <div class="text-[11px] text-slate-300 font-sans">메인 카드 및 기사 상단에 표시될 굵은 헤드라인 (30~50자 권장)</div>
+              </div>
+
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600">
+                <div class="font-bold text-yellow-300 font-sans mb-1">❸ 요약문 (국문)</div>
+                <div class="text-[11px] text-slate-300 font-sans">목록 카드 아래에 미리보기로 노출되는 1~2줄 핵심 요약 (80~120자 권장)</div>
+              </div>
+
+              <div class="p-3 bg-slate-700/60 rounded-lg border border-slate-600 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-yellow-300 font-sans">❹ 서식 툴바 & ❺ 상세 본문 (국문)</span>
+                  <span class="text-[10px] bg-teal-900/80 text-teal-300 px-1.5 py-0.5 rounded border border-teal-700 font-sans">Ctrl+V 이미지 붙여넣기 지원</span>
+                </div>
+                <div class="text-[11px] text-slate-300 font-sans leading-relaxed">
+                  소제목(H2, H3), 굵게, 인용구, 번호 목록을 사용해 기사 전문을 작성합니다. 캡처한 이미지를 본문에서 <b>Ctrl + V</b> 누르면 즉시 사진이 삽입됩니다.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column Map (5 cols) -->
+            <div class="lg:col-span-5 bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-700 text-slate-300 font-sans font-bold">
+                <span>[우측] 게시 및 미디어 설정</span>
+                <span class="text-[11px] text-indigo-400 font-normal">카테고리 & 파일 첨부</span>
+              </div>
+
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600">
+                <div class="font-bold text-emerald-300 font-sans mb-1">❻ 게시판 구분 * & 연계 이니셔티브</div>
+                <div class="text-[11px] text-slate-300 font-sans">
+                  • <b>뉴스 & 공지:</b> 보도자료, 행사 공지<br>
+                  • <b>K-디아스포라 현장칼럼:</b> 오피니언, 인터뷰<br>
+                  • <b>산업분석 보고서:</b> 전문 연구 리포트<br>
+                  • <b>연계 이니셔티브:</b> 6대 핵심 사업 매핑 (선택)
+                </div>
+              </div>
+
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600">
+                <div class="font-bold text-emerald-300 font-sans mb-1">❼ 발행일자 * & 외부 원문 링크</div>
+                <div class="text-[11px] text-slate-300 font-sans">
+                  기본은 오늘 날짜. 언론사 기사일 경우 원문 링크(URL)를 넣으면 [원문 보기] 버튼이 생깁니다.
+                </div>
+              </div>
+
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600">
+                <div class="font-bold text-emerald-300 font-sans mb-1">❽ 대표 썸네일 이미지</div>
+                <div class="text-[11px] text-slate-300 font-sans">
+                  목록 카드 및 기사 최상단 대표 이미지 (16:9 가로형 추천, 1600px WebP로 자동 압축)
+                </div>
+              </div>
+
+              <div class="p-2.5 bg-slate-700/60 rounded-lg border border-slate-600">
+                <div class="font-bold text-emerald-300 font-sans mb-1">❾ 첨부파일 / 보고서 PDF</div>
+                <div class="text-[11px] text-slate-300 font-sans">
+                  분석 보고서, 발표자료 PDF 파일 업로드 (방문자에게 [Download PDF] 다운로드 버튼 제공)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Bar Map -->
+          <div class="mt-4 p-3 bg-slate-800 rounded-xl border border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs font-sans">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sky-300">❿ 하단 옵션:</span>
+              <span class="text-slate-300">[✨ 저장 시 자동 번역] 토글 (켜두면 원클릭 영문 자동 생성)</span>
+            </div>
+            <div class="flex items-center gap-2 font-bold">
+              <span class="px-2.5 py-1 bg-slate-700 rounded text-slate-300">취소</span>
+              <span class="px-3 py-1 bg-blue-600 text-white rounded shadow-sm">⓫ 게시글 발행 / 저장 (영문 자동 반영)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Field Table Guide -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+            <thead class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3 w-12 text-center">번호</th>
+                <th class="p-3 w-40">필드명 (입력 영역)</th>
+                <th class="p-3 w-24">구분</th>
+                <th class="p-3">무엇을 넣어야 하나요? (가이드 & 실제 예시)</th>
+                <th class="p-3 w-48">실무 팁 & 주의사항</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-600">
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 text-center font-bold text-blue-600">❶</td>
+                <td class="p-3 font-semibold text-slate-900">국문 / 영문 탭</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-semibold text-[11px]">기본 국문</span></td>
+                <td class="p-3">작성할 언어를 선택합니다. 기본은 <b>[국문 작성]</b>으로 두시면 됩니다.</td>
+                <td class="p-3 text-slate-500">영문 탭은 영어를 직접 영작하고 싶을 때만 누르면 됩니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80 bg-blue-50/20">
+                <td class="p-3 text-center font-bold text-blue-600">❷</td>
+                <td class="p-3 font-semibold text-slate-900">제목 (국문)</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-semibold text-[11px]">필수 *</span></td>
+                <td class="p-3">
+                  게시글의 메인 제목을 입력합니다.<br>
+                  <span class="text-slate-500">예: <code>양민아 연구교수, 미국 풀브라이트 협회 '셀마 진 코헨 무용 강연상' 수상</code></span>
+                </td>
+                <td class="p-3 text-slate-500">30~50자 내외로 핵심 사실을 명확하게 적으면 카드에서 가장 예쁩니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 text-center font-bold text-blue-600">❸</td>
+                <td class="p-3 font-semibold text-slate-900">요약문 (국문)</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold text-[11px]">권장</span></td>
+                <td class="p-3">
+                  메인 홈 카드와 기사 목록에서 제목 밑에 노출되는 1~2줄 요약문입니다.<br>
+                  <span class="text-slate-500">예: <code>중앙아시아연구소 양민아 연구교수가 한국 소재 연구자 최초로 무용학 분야 최고 권위상을 수상했습니다.</code></span>
+                </td>
+                <td class="p-3 text-slate-500">생략하면 본문 앞부분이 자동 노출되지만, 1~2줄 요약을 직접 적으면 웹사이트가 훨씬 전문적으로 보입니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 text-center font-bold text-blue-600">❹</td>
+                <td class="p-3 font-semibold text-slate-900">서식 툴바</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold text-[11px]">도구</span></td>
+                <td class="p-3">소제목(H2, H3), 볼드체(B), 이탤릭(I), 인용문, 글머리 기호(•), 번호 목록, 구분선(---), 본문 사진 삽입 버튼</td>
+                <td class="p-3 text-slate-500">소제목을 중간중간 넣어주면 긴 글도 방문자가 읽기 편합니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80 bg-blue-50/20">
+                <td class="p-3 text-center font-bold text-blue-600">❺</td>
+                <td class="p-3 font-semibold text-slate-900">상세 본문 (국문)</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-semibold text-[11px]">필수 *</span></td>
+                <td class="p-3">기사의 전체 본문 내용을 자유롭게 작성합니다.</td>
+                <td class="p-3 text-slate-500 font-medium text-blue-700">캡처한 사진을 본문 창에서 <kbd class="bg-white border px-1 rounded">Ctrl+V</kbd>로 바로 붙여넣을 수 있습니다!</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80 bg-emerald-50/20">
+                <td class="p-3 text-center font-bold text-emerald-600">❻</td>
+                <td class="p-3 font-semibold text-slate-900">게시판 구분</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-semibold text-[11px]">필수 *</span></td>
+                <td class="p-3">
+                  게시글이 표시될 메뉴 카테고리를 드롭다운에서 선택합니다.<br>
+                  • <b>뉴스 & 공지 (News):</b> 보도자료, 언론 보도, 일반 공지사항<br>
+                  • <b>K-디아스포라 현장칼럼 (Column):</b> 해외 한인사회 인터뷰, 현장 칼럼, 기고문<br>
+                  • <b>산업분석 보고서 (Reports):</b> 연구 리포트, 통계 분석, 정책 백서
+                </td>
+                <td class="p-3 text-slate-500">선택한 게시판에 따라 웹사이트의 해당 서브 메뉴 및 메인 홈 분할 섹션에 자동 분류되어 등록됩니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 text-center font-bold text-emerald-600">❼</td>
+                <td class="p-3 font-semibold text-slate-900">연계 이니셔티브</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold text-[11px]">선택</span></td>
+                <td class="p-3">CordiaEC의 6대 핵심 사업(교육, 네트워크, 문화교류 등) 중 연관된 분야를 연결합니다.</td>
+                <td class="p-3 text-slate-500">해당 이니셔티브 상세 페이지 하단에도 관련 소식으로 함께 노출됩니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80 bg-emerald-50/20">
+                <td class="p-3 text-center font-bold text-emerald-600">❽</td>
+                <td class="p-3 font-semibold text-slate-900">발행일자</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-semibold text-[11px]">필수 *</span></td>
+                <td class="p-3">기사나 보고서의 공식 발행일입니다. 기본값으로 오늘 날짜가 자동 설정됩니다.</td>
+                <td class="p-3 text-slate-500">과거 날짜로 설정하여 예전자료 아카이빙도 가능하며, 미래 날짜 선택 시 예약 발행됩니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 text-center font-bold text-emerald-600">❾</td>
+                <td class="p-3 font-semibold text-slate-900">외부 원문 링크</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold text-[11px]">선택</span></td>
+                <td class="p-3">
+                  조선일보, 연합뉴스 등 외부 언론사 보도 원문 링크 URL을 입력합니다.<br>
+                  <span class="text-slate-500">예: <code>https://www.yna.co.kr/view/AKR...</code></span>
+                </td>
+                <td class="p-3 text-slate-500">입력 시 기사 상세 화면 상단에 <b>[원문 보기 ↗]</b> 아웃링크 버튼이 자동 생성됩니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80 bg-emerald-50/20">
+                <td class="p-3 text-center font-bold text-emerald-600">❿</td>
+                <td class="p-3 font-semibold text-slate-900">대표 썸네일 이미지</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold text-[11px]">강력 권장</span></td>
+                <td class="p-3">메인 홈 카드 및 상세 페이지 최상단에 들어갈 대표 커버 사진을 업로드합니다.</td>
+                <td class="p-3 text-slate-500">16:9 가로형 사진(1920x1080 등)이 가장 예쁩니다. 고용량 사진도 시스템이 1600px 차세대 WebP로 자동 최적화합니다.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 text-center font-bold text-emerald-600">⓫</td>
+                <td class="p-3 font-semibold text-slate-900">첨부파일 / 보고서 PDF</td>
+                <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold text-[11px]">선택 (보고서 필수)</span></td>
+                <td class="p-3">연구 리포트, 세미나 발표자료, 백서 등 PDF 문서를 첨부합니다 (최대 30MB).</td>
+                <td class="p-3 text-slate-500">등록 시 방문자에게 <b>[Download PDF (0.5MB)]</b> 버튼이 노출되어 원문 열람을 제공합니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 4: Recommended 5-Step Order -->
+      <section class="bg-slate-50/80 rounded-2xl p-6 sm:p-8 border border-slate-200">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+            04
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">추천 작성 순서: 실패 없는 5단계 프로세스</h2>
+            <p class="text-xs text-slate-500 mt-0.5">실무에서 가장 빠르고 실수 없이 글을 발행하는 추천 순서입니다.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 mt-5 text-xs">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div class="px-2 py-0.5 bg-slate-900 text-white font-bold text-[10px] rounded inline-block mb-2">STEP 1</div>
+              <div class="font-bold text-slate-900 text-sm mb-1">기본 설정 확인</div>
+              <p class="text-slate-600 text-[11px] leading-relaxed">
+                우측 영역에서 <b>[게시판 구분]</b>(뉴스/칼럼/보고서)과 <b>[발행일자]</b>를 먼저 확인합니다.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] text-blue-600 font-semibold">우측 상단 ❻, ❼번</div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div class="px-2 py-0.5 bg-slate-900 text-white font-bold text-[10px] rounded inline-block mb-2">STEP 2</div>
+              <div class="font-bold text-slate-900 text-sm mb-1">제목 & 요약 작성</div>
+              <p class="text-slate-600 text-[11px] leading-relaxed">
+                좌측 상단에서 <b>[제목]</b>과 메인 홈 카드에 보일 1~2줄 <b>[요약문]</b>을 한국어로 적습니다.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] text-blue-600 font-semibold">좌측 상단 ❷, ❸번</div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div class="px-2 py-0.5 bg-slate-900 text-white font-bold text-[10px] rounded inline-block mb-2">STEP 3</div>
+              <div class="font-bold text-slate-900 text-sm mb-1">상세 본문 작성</div>
+              <p class="text-slate-600 text-[11px] leading-relaxed">
+                기사 전문을 작성합니다. 캡처한 이미지가 있다면 본문에서 바로 <b>Ctrl+V</b>로 붙여넣습니다.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] text-blue-600 font-semibold">좌측 캔버스 ❹, ❺번</div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div class="px-2 py-0.5 bg-slate-900 text-white font-bold text-[10px] rounded inline-block mb-2">STEP 4</div>
+              <div class="font-bold text-slate-900 text-sm mb-1">사진 / PDF 첨부</div>
+              <p class="text-slate-600 text-[11px] leading-relaxed">
+                우측 영역에서 메인 카드에 보일 <b>[대표 썸네일]</b>을 올리고, 리포트라면 <b>[PDF]</b>를 첨부합니다.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] text-blue-600 font-semibold">우측 하단 ❿, ⓫번</div>
+          </div>
+
+          <div class="bg-blue-600 text-white p-4 rounded-xl border border-blue-700 flex flex-col justify-between shadow-sm">
+            <div>
+              <div class="px-2 py-0.5 bg-white text-blue-900 font-bold text-[10px] rounded inline-block mb-2">STEP 5</div>
+              <div class="font-bold text-white text-sm mb-1">[저장] 클릭 완료!</div>
+              <p class="text-blue-100 text-[11px] leading-relaxed">
+                영문 탭 갈 필요 없이 하단 [저장] 누른 후 <b>[자동 번역 후 저장]</b>만 확인하면 한/영 동시 발행 완료!
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] text-blue-200 font-semibold">하단 저장 버튼</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: YouTube Video Sorting & Drag-and-Drop Guide -->
+      <section class="bg-red-50/40 rounded-2xl p-6 sm:p-8 border border-red-100">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-sm">
+            05
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">유튜브 영상 순서 정렬 & 드래그 앤 드롭 가이드</h2>
+            <p class="text-xs text-slate-500 mt-0.5">홈 화면 미디어 쇼케이스에 어떤 영상을 대표(1위)로 띄울지 마우스 드래그와 버튼으로 자유롭게 통제합니다.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-xs">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-slate-900 text-white rounded font-bold text-[10px]">기능 1</span>
+              <h4 class="font-bold text-slate-900 text-sm">정렬 기준 3종 원클릭 전환</h4>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              상단 툴바에서 <b>[지정 순서]</b>, <b>[최신순]</b>, <b>[인기/대표순]</b> 버튼을 눌러 원하는 기준으로 영상 목록을 즉시 정렬할 수 있습니다.
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-blue-600 text-white rounded font-bold text-[10px]">기능 2</span>
+              <h4 class="font-bold text-slate-900 text-sm">마우스 드래그 앤 드롭 (순서 이동)</h4>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              카드 좌측의 핸들(⋮⋮)을 잡고 원하는 위치로 끌어다 놓으면(Drop), <b>1위부터 번호가 자동 재부여</b>되며 홈 화면에 즉시 순서가 실시간 저장됩니다. (▲/▼ 화살표 버튼으로 1칸씩 이동도 가능)
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-emerald-600 text-white rounded font-bold text-[10px]">기능 3</span>
+              <h4 class="font-bold text-slate-900 text-sm">숫자 직접 입력 & 일괄 저장</h4>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              기존처럼 영상 수정 창에서 <b>[노출 순서] 숫자를 직접 타이핑</b>해 지정할 수도 있으며, [현재 정렬대로 순서번호 일괄 저장] 버튼을 누르면 전체 영상 번호가 1초 만에 깔끔하게 재정리됩니다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Translation Glossary Guide -->
+      <section class="bg-emerald-50/40 rounded-2xl p-6 sm:p-8 border border-emerald-100">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
+            06
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">번역 고정 용어집(Glossary) 완벽 활용 가이드</h2>
+            <p class="text-xs text-slate-500 mt-0.5">고유명사, 기관명, 연구소명, 인명이 영어로 이상하게 오역되는 문제를 100% 원천 차단합니다.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-xs mt-4">
+          <!-- Why Need -->
+          <div class="p-4 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
+            <h4 class="font-bold text-emerald-950 text-sm mb-1 flex items-center gap-1.5">
+              <span>📖</span> 왜 고정 용어집을 써야 할까요?
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              일반 AI 번역기는 <code>K-학술확산연구센터</code>를 매번 임의로 번역하지만, 용어집에 등록해 두면 시스템이 <b>항상 지정된 공식 영문 명칭(예: K-Academic Diffusion Research Center)</b>으로 100% 고정하여 번역합니다.
+            </p>
+          </div>
+
+          <!-- 2 Ways to Register -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <span class="inline-block px-2 py-0.5 bg-slate-900 text-white font-bold text-[10px] rounded mb-1.5">등록 방법 A</span>
+              <h5 class="font-bold text-slate-900 text-sm mb-1">[번역 고정 용어집] 탭에서 직접 추가</h5>
+              <p class="text-slate-600 leading-relaxed text-[11px]">
+                좌측 사이드바 <b>[번역 고정 용어집]</b> 메뉴 클릭 ➔ <b>[새 용어 등록]</b> ➔ 한국어 단어와 지정할 영어 단어를 한 쌍으로 입력하고 저장합니다.
+              </p>
+            </div>
+
+            <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <span class="inline-block px-2 py-0.5 bg-blue-600 text-white font-bold text-[10px] rounded mb-1.5">등록 방법 B (가장 빠름)</span>
+              <h5 class="font-bold text-slate-900 text-sm mb-1">본문 쓰다가 마우스 우클릭으로 원클릭 등록</h5>
+              <p class="text-slate-600 leading-relaxed text-[11px]">
+                게시글 본문을 작성하다가 고정하고 싶은 단어를 <b>마우스로 쓱 드래그한 후 우클릭</b>하면 용어집 팝오버가 뜹니다. 그 자리에서 영단어를 넣고 바로 등록할 수 있습니다!
+              </p>
+            </div>
+          </div>
+
+          <!-- Integration Tip -->
+          <div class="p-3.5 bg-emerald-100/70 rounded-xl text-emerald-950 flex items-start gap-2 border border-emerald-200">
+            <span class="text-base shrink-0">✨</span>
+            <div class="leading-relaxed">
+              <b>실시간 반영 원리:</b> 용어집에 등록된 단어들은 관리자님이 상단 <b>[번역하기]</b>를 누르거나 기본 <b>[저장 시 자동 번역]</b>으로 저장할 때마다 DeepL AI에 사전 규칙으로 강제 주입되어 영구적으로 일관된 번역 품질을 유지합니다.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: 10 Admin Tabs Cheat Sheet -->
+      <section>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-100">
+            07
+          </div>
+          <h2 class="text-xl font-bold text-slate-900">어드민 10대 메뉴 한눈에 보기</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+            <thead class="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3">메뉴명</th>
+                <th class="p-3">주요 관리 기능</th>
+                <th class="p-3">홈페이지 노출 위치</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-600">
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">1. 게시글/보고서</td>
+                <td class="p-3">뉴스, K-디아스포라 현장칼럼, 산업분석 보고서 등록 (PDF 다운로드 제공)</td>
+                <td class="p-3 text-blue-700 font-medium">메인 홈 분할 섹션 및 각 서브 메뉴</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">2. 유튜브 영상</td>
+                <td class="p-3">세미나, 석학 대담 영상 링크 등록, 슬라이딩 노출 순서 및 On/Off 제어</td>
+                <td class="p-3 text-blue-700 font-medium">메인 홈 미디어 & 영상 아카이브 섹션</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">3. 이니셔티브</td>
+                <td class="p-3">6대 핵심 사업 분야 소개 문구 및 주요 실행 과제(불릿) 한/영 수정</td>
+                <td class="p-3 text-blue-700 font-medium">메인 홈 6개 카드 및 이니셔티브 상세</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">4. 히어로</td>
+                <td class="p-3">메인 최상단 대형 비주얼 배너 이미지 교체 및 국/영문 헤드라인 문구 제어</td>
+                <td class="p-3 text-blue-700 font-medium">메인 홈 최상단 풀스크린 슬라이드</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">5. 팝업 안내창</td>
+                <td class="p-3">중요 공지 팝업창 작성, 화면 상단/중앙 위치 드래그 에디터, 국/영문 분리 노출</td>
+                <td class="p-3 text-blue-700 font-medium">접속 시 화면 위에 플로팅 안내</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">6. 연혁</td>
+                <td class="p-3">1985년 인하대 연구소 설립부터 현재까지의 발전사 타임라인 추가/수정</td>
+                <td class="p-3 text-blue-700 font-medium">About(회사 소개) 페이지 공식 연혁</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">7. 협력사</td>
+                <td class="p-3">국내외 파트너 기관 로고 이미지 및 공식 홈페이지 링크 관리</td>
+                <td class="p-3 text-blue-700 font-medium">메인 홈 하단 파트너 롤링 배너</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">8. 홈/SNS 설정</td>
+                <td class="p-3">CordiaEC 핵심 비전 문구, 푸터 이메일/전화번호, SNS 링크 통합 관리</td>
+                <td class="p-3 text-blue-700 font-medium">메인 소개 섹션 및 웹사이트 푸터 전역</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">9. 문의함</td>
+                <td class="p-3">Contact Us 폼을 통해 접수된 고객 및 제휴 제안 문의 실시간 열람</td>
+                <td class="p-3 text-blue-700 font-medium">관리자 전용 비공개 수신함</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80">
+                <td class="p-3 font-semibold text-slate-900">10. 번역 용어집</td>
+                <td class="p-3">AI 번역 시 오역되기 쉬운 고유명사(기관명, 인명)를 지정된 영단어로 100% 고정</td>
+                <td class="p-3 text-blue-700 font-medium">시스템 전역 DeepL AI 번역기 연동</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 8: Practical Operational Tips -->
+      <section class="border-t border-slate-100 pt-8">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-100">
+            08
+          </div>
+          <h2 class="text-xl font-bold text-slate-900">실무 운영 꿀팁</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <h4 class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              <span>🖼️ 이미지 업로드 간편 팁</span>
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              본문 작성 중 스크린샷이나 이미지를 파일로 저장할 필요 없이, 캡처 후 본문 입력창에서 <b>Ctrl + V (Cmd + V)</b>를 누르면 차세대 웹 이미지(WebP)로 자동 압축되어 즉시 업로드됩니다.
+            </p>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <h4 class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              <span>📄 PDF 분석 리포트 첨부</span>
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              보고서 작성 시 PDF 파일을 첨부하면 웹사이트 방문자에게 영문 [Download PDF] 버튼이 표시되며, 원문 열람 및 다운로드가 원클릭으로 지원됩니다.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 px-8 py-6 text-xs flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-white tracking-wide">CordiaEC</span>
+        <span>• Global Knowledge Media Hub</span>
+      </div>
+      <div class="text-[11px] text-slate-500">
+        문서 버전 2.5 (작성 영역 가이드 및 순서 추가 반영) | 문의: 기술운영팀
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

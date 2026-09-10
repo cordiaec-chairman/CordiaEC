@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar, Video, ExternalLink, Play, Sparkles, Languages, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, Video, ExternalLink, Play, Sparkles, Languages, Loader2, GripVertical, ArrowUpDown, ChevronUp, ChevronDown, Check } from "lucide-react";
 
 export default function AdminYouTubeTab() {
   const { toast } = useToast();
@@ -46,6 +46,14 @@ export default function AdminYouTubeTab() {
   const [translating, setTranslating] = useState(false);
   const [confirmTranslateOpen, setConfirmTranslateOpen] = useState(false);
   const [translateDirection, setTranslateDirection] = useState<"koToEn" | "enToKo">("koToEn");
+
+  // 정렬 모드 및 드래그앤드롭 상태
+  const [sortMode, setSortMode] = useState<"custom" | "latest" | "popular">("custom");
+  const [localVideos, setLocalVideos] = useState<YouTubeVideo[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const didDragRef = useRef(false);
 
   const defaultForm = {
     youtube_url: "",
@@ -65,6 +73,12 @@ export default function AdminYouTubeTab() {
     queryKey: ["admin_youtube_videos"],
     queryFn: () => getYoutubeVideos(true),
   });
+
+  useEffect(() => {
+    if (videos && videos.length > 0) {
+      setLocalVideos(videos);
+    }
+  }, [videos]);
 
   const createMutation = useMutation({
     mutationFn: createYoutubeVideo,
@@ -378,6 +392,130 @@ export default function AdminYouTubeTab() {
     executeDirectSave();
   };
 
+  // 정렬된 영상 목록 계산 (로컬 상태 localVideos 우선 적용으로 0ms 즉각 반응)
+  const currentVideos = localVideos.length > 0 ? localVideos : videos;
+  const sortedVideos = [...currentVideos].sort((a, b) => {
+    if (sortMode === "latest") {
+      const dateA = new Date(a.published_date || a.created_at || 0).getTime();
+      const dateB = new Date(b.published_date || b.created_at || 0).getTime();
+      return dateB - dateA;
+    }
+    if (sortMode === "popular") {
+      if (a.is_active !== b.is_active) {
+        return a.is_active ? -1 : 1;
+      }
+      return (a.display_order ?? 0) - (b.display_order ?? 0);
+    }
+    return (a.display_order ?? 0) - (b.display_order ?? 0);
+  });
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (sortMode !== "custom") return;
+    didDragRef.current = true;
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    try {
+      e.dataTransfer.setData("text/plain", `${index}`);
+    } catch {}
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    if (sortMode !== "custom" || draggedIndex === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setTimeout(() => {
+      didDragRef.current = false;
+    }, 150);
+  };
+
+  const applyOrderList = async (list: YouTubeVideo[]) => {
+    setIsReordering(true);
+    // 1. 0ms 낙관적 로컬 즉시 갱신 (화면 깜빡임·되돌아감 방지)
+    const reindexedList = list.map((video, idx) => ({
+      ...video,
+      display_order: idx + 1,
+    }));
+    setLocalVideos(reindexedList);
+
+    try {
+      // 2. LocalStorage에 순서맵 영구 보관 (시드 데이터 및 DB 미생성 시에도 100% 지속 유지)
+      const orderMap: Record<string, number> = {};
+      reindexedList.forEach((v, idx) => {
+        orderMap[v.id] = idx + 1;
+      });
+      localStorage.setItem("cordia_youtube_seed_order", JSON.stringify(orderMap));
+
+      // 3. 실제 DB 데이터인 경우 Supabase display_order 일괄 갱신
+      const realDbVideos = reindexedList.filter((v) => !v.id.startsWith("yt-seed-"));
+      if (realDbVideos.length > 0) {
+        await Promise.all(
+          realDbVideos.map((video) =>
+            updateYoutubeVideo(video.id, { display_order: video.display_order })
+          )
+        );
+        queryClient.invalidateQueries({ queryKey: ["admin_youtube_videos"] });
+        queryClient.invalidateQueries({ queryKey: ["youtube_videos"] });
+      }
+
+      toast({
+        title: "순서 변경 완료",
+        description: `새로운 순서가 적용되었습니다. (1위: ${reindexedList[0]?.title_ko || reindexedList[0]?.title || "첫 번째 영상"})`,
+      });
+    } catch (err: any) {
+      console.warn("Could not persist to Supabase:", err.message);
+      toast({
+        title: "순서 로컬 적용 완료",
+        description: "새로운 순서가 브라우저에 저장되었습니다.",
+      });
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (sortMode !== "custom" || draggedIndex === null || draggedIndex === targetIndex) {
+      handleDragEnd();
+      return;
+    }
+
+    const nextList = [...sortedVideos];
+    const [movedItem] = nextList.splice(draggedIndex, 1);
+    nextList.splice(targetIndex, 0, movedItem);
+
+    handleDragEnd();
+    await applyOrderList(nextList);
+  };
+
+  const handleMoveOne = async (currentIndex: number, delta: number) => {
+    const targetIndex = currentIndex + delta;
+    if (targetIndex < 0 || targetIndex >= sortedVideos.length) return;
+
+    const nextList = [...sortedVideos];
+    const [movedItem] = nextList.splice(currentIndex, 1);
+    nextList.splice(targetIndex, 0, movedItem);
+
+    await applyOrderList(nextList);
+  };
+
+  const handleApplyCurrentSortAsDisplayOrder = async () => {
+    if (sortedVideos.length === 0) return;
+    await applyOrderList(sortedVideos);
+    setSortMode("custom");
+    toast({
+      title: "순서번호 일괄 적용 완료",
+      description: "현재 정렬된 순서대로 1번부터 번호가 영구 저장되었습니다.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Tab Header */}
@@ -397,6 +535,62 @@ export default function AdminYouTubeTab() {
         >
           <Plus className="w-4 h-4 mr-1.5" /> 영상 등록
         </Button>
+      </div>
+
+      {/* Sorting Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-slate-100/90 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-bold text-slate-700 ml-1 mr-1 flex items-center gap-1">
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+            정렬 기준:
+          </span>
+          <button
+            type="button"
+            onClick={() => setSortMode("custom")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              sortMode === "custom"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            지정 순서 (드래그 가능)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortMode("latest")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              sortMode === "latest"
+                ? "bg-white text-blue-700 shadow-2xs border border-blue-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            최신순
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortMode("popular")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              sortMode === "popular"
+                ? "bg-white text-red-700 shadow-2xs border border-red-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            인기/대표순
+          </button>
+        </div>
+
+        {sortMode !== "custom" && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isReordering}
+            onClick={handleApplyCurrentSortAsDisplayOrder}
+            className="text-xs h-8 bg-white hover:bg-slate-50 text-slate-800 font-semibold border-slate-300 shadow-2xs flex items-center gap-1.5"
+          >
+            <Check className="w-3.5 h-3.5 text-blue-600" />
+            <span>현재 {sortMode === "latest" ? "최신순" : "인기순"}대로 순서번호(1~N) 일괄 저장</span>
+          </Button>
+        )}
       </div>
 
       {/* Seed fallback notice if DB table not yet created */}
@@ -422,7 +616,7 @@ export default function AdminYouTubeTab() {
             <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
           ))}
         </div>
-      ) : videos.length === 0 ? (
+      ) : sortedVideos.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
           <Video className="w-8 h-8 mx-auto mb-2 text-slate-300" />
           <p className="text-sm font-medium text-slate-600">등록된 영상이 없습니다.</p>
@@ -430,20 +624,80 @@ export default function AdminYouTubeTab() {
         </div>
       ) : (
         <div className="grid gap-3.5">
-          {videos.map((video, idx) => (
+          {sortedVideos.map((video, idx) => (
             <Card
               key={video.id}
-              onClick={() => openEditForm(video)}
-              className="border border-slate-200/90 hover:border-slate-400 hover:shadow-md transition-all group overflow-hidden cursor-pointer bg-white hover:bg-slate-50/50"
+              draggable={sortMode === "custom"}
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnd={handleDragEnd}
+              onDrop={(e) => handleDrop(e, idx)}
+              onClick={() => {
+                if (didDragRef.current) return;
+                openEditForm(video);
+              }}
+              className={`border select-none transition-all group overflow-hidden cursor-pointer bg-white hover:bg-slate-50/50 ${
+                dragOverIndex === idx
+                  ? "border-blue-500 ring-4 ring-blue-300/60 bg-blue-50/40 shadow-lg scale-[1.01]"
+                  : "border-slate-200/90 hover:border-slate-400 hover:shadow-md"
+              } ${draggedIndex === idx ? "opacity-30 border-dashed border-blue-400 shadow-none" : ""}`}
             >
-              <CardContent className="p-3.5 sm:p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+              <CardContent className="p-3.5 sm:p-4 flex items-center justify-between gap-3">
+                {/* Drag Handle & Step Buttons */}
+                <div
+                  className="flex items-center gap-1 shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    className={`p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors ${
+                      sortMode === "custom"
+                        ? "cursor-grab active:cursor-grabbing"
+                        : "cursor-not-allowed opacity-30"
+                    }`}
+                    title={
+                      sortMode === "custom"
+                        ? "마우스로 드래그하여 순서 이동 (1위 영상은 메인 홈 대표 영상으로 자동 노출됩니다)"
+                        : "지정 순서 모드에서 드래그 가능합니다"
+                    }
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      disabled={idx === 0 || isReordering || sortMode !== "custom"}
+                      onClick={() => handleMoveOne(idx, -1)}
+                      className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-20 hover:bg-slate-100 rounded"
+                      title="한 칸 위로 이동"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={
+                        idx === sortedVideos.length - 1 ||
+                        isReordering ||
+                        sortMode !== "custom"
+                      }
+                      onClick={() => handleMoveOne(idx, 1)}
+                      className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-20 hover:bg-slate-100 rounded"
+                      title="한 칸 아래로 이동"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex items-center gap-3.5 min-w-0 flex-1 pointer-events-none select-none">
                   {/* Thumbnail */}
-                  <div className="relative w-28 sm:w-32 aspect-video rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
+                  <div className="relative w-28 sm:w-32 aspect-video rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-200 pointer-events-none select-none">
                     <img
                       src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
                       alt=""
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none select-none"
                     />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 flex items-center justify-center transition-colors">
                       <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow">
@@ -463,7 +717,9 @@ export default function AdminYouTubeTab() {
                             : "bg-slate-50 text-slate-600 border-slate-200 text-[10px]"
                         }
                       >
-                        {idx === 0 ? "대표 영상 (1위)" : `순서 #${video.display_order}`}
+                        {idx === 0
+                          ? "대표 영상 (1위)"
+                          : `순서 #${video.display_order} (${idx + 1}위)`}
                       </Badge>
                       {!video.is_active && (
                         <Badge variant="secondary" className="bg-slate-100 text-slate-500 text-[10px]">
@@ -613,7 +869,7 @@ export default function AdminYouTubeTab() {
                   </button>
                 </div>
 
-                {/* Single Clean Auto-Translate Control Button */}
+                {/* Single Clean Translate Control Button */}
                 <Button
                   type="button"
                   variant="outline"
@@ -621,13 +877,14 @@ export default function AdminYouTubeTab() {
                   onClick={activeLangTab === "ko" ? handleTranslateKoToEn : handleTranslateEnToKo}
                   disabled={translating || (activeLangTab === "ko" ? !form.title_ko.trim() : !form.title.trim())}
                   className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
+                  title="현재 작성된 내용을 바탕으로 반대 언어로 즉시 번역합니다 (결과 확인 및 직접 수정 가능)"
                 >
                   {translating ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Sparkles className="w-3.5 h-3.5 text-blue-600" />
                   )}
-                  <span>자동 번역</span>
+                  <span>번역하기</span>
                 </Button>
               </div>
 
