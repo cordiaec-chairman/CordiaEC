@@ -12,6 +12,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Pencil, Sparkles, Loader2, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +31,8 @@ export default function AdminInitiativesTab() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Initiative | null>(null);
   const [activeLangTab, setActiveLangTab] = useState<"ko" | "en">("ko");
+  const [confirmTranslateOpen, setConfirmTranslateOpen] = useState(false);
+  const [translateDirection, setTranslateDirection] = useState<"koToEn" | "enToKo">("koToEn");
 
   const [form, setForm] = useState({
     title: "",
@@ -36,6 +46,7 @@ export default function AdminInitiativesTab() {
     imageUrl: "",
   });
   const [translating, setTranslating] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleTranslateKoToEn = async () => {
     const src = [form.titleKo || form.label, form.descriptionKo, form.contentKo];
@@ -52,6 +63,7 @@ export default function AdminInitiativesTab() {
         description: f.descriptionKo.trim() ? description.trim() : f.description,
         content: f.contentKo.trim() ? content.trim() : f.content,
       }));
+      setActiveLangTab("en");
       toast({ title: "영문 번역 완료", description: "영문 탭에 번역 내용이 반영되었습니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
@@ -76,6 +88,7 @@ export default function AdminInitiativesTab() {
         descriptionKo: f.description.trim() ? descriptionKo.trim() : f.descriptionKo,
         contentKo: f.content.trim() ? contentKo.trim() : f.contentKo,
       }));
+      setActiveLangTab("ko");
       toast({ title: "국문 번역 완료", description: "국문 탭에 번역 내용이 반영되었습니다." });
     } catch (err: any) {
       toast({ title: "번역 실패", description: err.message, variant: "destructive" });
@@ -91,14 +104,17 @@ export default function AdminInitiativesTab() {
 
   const openEdit = (init: Initiative) => {
     setEditing(init);
+    const isTitleSame = Boolean(init.title && init.title_ko && init.title.trim() === init.title_ko.trim());
+    const isDescSame = Boolean(init.description && init.description_ko && init.description.trim() === init.description_ko.trim());
+
     setForm({
-      title: init.title || "",
+      title: isTitleSame ? "" : (init.title || ""),
       label: init.label || "",
       category: init.category || "",
-      description: init.description || "",
+      description: isDescSame ? "" : (init.description || ""),
       content: init.content || "",
-      titleKo: init.title_ko || "",
-      descriptionKo: init.description_ko || "",
+      titleKo: init.title_ko || (isTitleSame ? init.title : ""),
+      descriptionKo: init.description_ko || (isDescSame ? init.description : ""),
       contentKo: init.content_ko || "",
       imageUrl: init.image_url || "",
     });
@@ -106,38 +122,99 @@ export default function AdminInitiativesTab() {
     setFormOpen(true);
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!editing) return;
-      const finalTitleKo = form.titleKo.trim() || form.label.trim() || form.title.trim();
-      const finalTitle = form.title.trim() || finalTitleKo;
-      const finalLabel = form.label.trim() || finalTitleKo;
+  const executeSave = async (customForm?: typeof form) => {
+    const f = customForm || form;
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const finalTitleKo = f.titleKo.trim() || f.label.trim();
+      const finalTitle = f.title.trim();
+      const finalLabel = f.label.trim() || finalTitleKo;
 
       await updateInitiative(editing.slug, {
-        title: finalTitle,
+        title: finalTitle || finalLabel,
         label: finalLabel,
-        category: form.category,
-        description: form.description,
-        content: form.content,
-        title_ko: finalTitleKo,
-        description_ko: form.descriptionKo.trim() || null,
-        content_ko: form.contentKo.trim() || null,
-        image_url: form.imageUrl.trim() || null,
+        category: f.category,
+        description: f.description.trim(),
+        content: f.content.trim(),
+        title_ko: finalTitleKo || null,
+        description_ko: f.descriptionKo.trim() || null,
+        content_ko: f.contentKo.trim() || null,
+        image_url: f.imageUrl.trim() || null,
       });
-    },
-    onSuccess: () => {
+
       queryClient.invalidateQueries({ queryKey: ["initiatives"] });
       setFormOpen(false);
+      setConfirmTranslateOpen(false);
       toast({ title: "수정 완료", description: "이니셔티브 정보가 업데이트되었습니다." });
-    },
-    onError: (err: any) => {
+    } catch (err: any) {
       toast({
         title: "오류",
         description: err.message,
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const executeSaveWithAutoTranslate = async () => {
+    setTranslating(true);
+    try {
+      let updatedForm = { ...form };
+      if (translateDirection === "koToEn") {
+        const src = [form.titleKo || form.label, form.descriptionKo, form.contentKo];
+        const [enTitle, enDesc, enContent] = await translateTexts(src.map((t) => t || " "), "EN-US");
+        updatedForm = {
+          ...form,
+          title: enTitle.trim(),
+          description: enDesc.trim(),
+          content: enContent.trim(),
+        };
+      } else {
+        const src = [form.title, form.description, form.content];
+        const [koTitle, koDesc, koContent] = await translateTexts(src.map((t) => t || " "), "KO");
+        updatedForm = {
+          ...form,
+          titleKo: koTitle.trim(),
+          label: form.label.trim() || koTitle.trim(),
+          descriptionKo: koDesc.trim(),
+          contentKo: koContent.trim(),
+        };
+      }
+      setForm(updatedForm);
+      setConfirmTranslateOpen(false);
+      await executeSave(updatedForm);
+    } catch (err: any) {
+      toast({
+        title: "자동 번역 실패",
+        description: (err.message || "DeepL 번역 중 오류가 발생했습니다.") + " 현재 입력된 내용으로 저장합니다.",
+        variant: "destructive",
+      });
+      setConfirmTranslateOpen(false);
+      await executeSave(form);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleInitiateSave = () => {
+    const hasKo = Boolean(form.titleKo.trim() || form.label.trim());
+    const hasEn = Boolean(form.title.trim());
+
+    if (hasKo && !hasEn) {
+      setTranslateDirection("koToEn");
+      setConfirmTranslateOpen(true);
+      return;
+    }
+    if (!hasKo && hasEn) {
+      setTranslateDirection("enToKo");
+      setConfirmTranslateOpen(true);
+      return;
+    }
+
+    executeSave(form);
+  };
 
   return (
     <div>
@@ -243,39 +320,22 @@ export default function AdminInitiativesTab() {
                 </button>
               </div>
 
-              {activeLangTab === "ko" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTranslateKoToEn}
-                  disabled={translating || (!form.titleKo.trim() && !form.label.trim())}
-                  className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
-                >
-                  {translating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                  )}
-                  <span>영문으로 자동 번역</span>
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTranslateEnToKo}
-                  disabled={translating || !form.title.trim()}
-                  className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
-                >
-                  {translating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                  )}
-                  <span>국문으로 자동 번역</span>
-                </Button>
-              )}
+              {/* Single Clean Auto-Translate Control Button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={activeLangTab === "ko" ? handleTranslateKoToEn : handleTranslateEnToKo}
+                disabled={translating || (activeLangTab === "ko" ? (!form.titleKo.trim() && !form.label.trim()) : !form.title.trim())}
+                className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
+              >
+                {translating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                )}
+                <span>자동 번역</span>
+              </Button>
             </div>
 
             {/* Korean Tab Panel */}
@@ -406,14 +466,69 @@ export default function AdminInitiativesTab() {
             </Button>
             <Button
               className="bg-[#0f2445] hover:bg-[#1a3a60] text-white text-xs font-semibold"
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
+              onClick={handleInitiateSave}
+              disabled={saving || translating}
             >
-              {saveMutation.isPending ? "저장 중..." : "저장"}
+              {saving ? "저장 중..." : "저장"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Auto Translate on Save Confirmation Alert */}
+      <AlertDialog open={confirmTranslateOpen} onOpenChange={setConfirmTranslateOpen}>
+        <AlertDialogContent className="max-w-md bg-white rounded-2xl">
+          <AlertDialogHeader>
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-1 border border-blue-100 shadow-2xs">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <AlertDialogTitle className="text-base font-bold text-slate-900">
+              {translateDirection === "koToEn"
+                ? "영문 번역본을 함께 생성하시겠습니까?"
+                : "국문 번역본을 함께 생성하시겠습니까?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600 space-y-2 leading-relaxed pt-1">
+              <p>
+                {translateDirection === "koToEn"
+                  ? "현재 국문 내용만 작성되어 있습니다. 글로벌 영문 방문자를 위해 DeepL로 자동 번역하여 함께 저장할까요?"
+                  : "현재 영문 내용만 작성되어 있습니다. 국내 국문 방문자를 위해 DeepL로 자동 번역하여 함께 저장할까요?"}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-col gap-2 mt-3">
+            <Button
+              className="w-full bg-[#0f2445] hover:bg-[#1a3a60] text-white text-xs h-9 font-semibold rounded-xl shadow-xs"
+              onClick={executeSaveWithAutoTranslate}
+              disabled={translating || saving}
+            >
+              {translating ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              자동 번역 후 저장
+            </Button>
+            <div className="flex items-center gap-2 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 text-xs h-8.5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                onClick={() => executeSave(form)}
+                disabled={translating || saving}
+              >
+                현재 언어만 저장
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-xs h-8.5 rounded-xl text-slate-500 hover:bg-slate-100"
+                onClick={() => setConfirmTranslateOpen(false)}
+                disabled={translating || saving}
+              >
+                취소
+              </Button>
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

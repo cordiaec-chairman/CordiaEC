@@ -44,6 +44,8 @@ export default function AdminYouTubeTab() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [activeLangTab, setActiveLangTab] = useState<"ko" | "en">("ko");
   const [translating, setTranslating] = useState(false);
+  const [confirmTranslateOpen, setConfirmTranslateOpen] = useState(false);
+  const [translateDirection, setTranslateDirection] = useState<"koToEn" | "enToKo">("koToEn");
 
   const defaultForm = {
     youtube_url: "",
@@ -162,13 +164,16 @@ export default function AdminYouTubeTab() {
 
   const openEditForm = (video: YouTubeVideo) => {
     setEditingVideo(video);
+    const isTitleSame = Boolean(video.title && video.title_ko && video.title.trim() === video.title_ko.trim());
+    const isSummarySame = Boolean(video.summary && video.summary_ko && video.summary.trim() === video.summary_ko.trim());
+
     setForm({
       youtube_url: video.youtube_url,
       video_id: video.video_id,
-      title: video.title,
-      title_ko: video.title_ko || "",
-      summary: video.summary || "",
-      summary_ko: video.summary_ko || "",
+      title: isTitleSame ? "" : (video.title || ""),
+      title_ko: video.title_ko || (isTitleSame ? (video.title || "") : ""),
+      summary: isSummarySame ? "" : (video.summary || ""),
+      summary_ko: video.summary_ko || (isSummarySame ? (video.summary || "") : ""),
       published_date: video.published_date,
       display_order: video.display_order,
       is_active: video.is_active,
@@ -260,6 +265,83 @@ export default function AdminYouTubeTab() {
     }));
   };
 
+  const executeSave = (payload: any) => {
+    if (editingVideo) {
+      updateMutation.mutate({ id: editingVideo.id, updates: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const executeSaveWithAutoTranslate = async () => {
+    setTranslating(true);
+    try {
+      let finalTitle = form.title.trim();
+      let finalTitleKo = form.title_ko.trim();
+      let finalSummary = form.summary.trim();
+      let finalSummaryKo = form.summary_ko.trim();
+
+      if (translateDirection === "koToEn") {
+        const sources = [form.title_ko, form.summary_ko];
+        const [enTitle, enSummary] = await translateTexts(sources.map((t) => t || " "), "EN-US");
+        finalTitle = enTitle.trim();
+        finalSummary = enSummary.trim();
+        setForm((prev) => ({ ...prev, title: finalTitle, summary: finalSummary }));
+      } else {
+        const sources = [form.title, form.summary];
+        const [koTitle, koSummary] = await translateTexts(sources.map((t) => t || " "), "KO");
+        finalTitleKo = koTitle.trim();
+        finalSummaryKo = koSummary.trim();
+        setForm((prev) => ({ ...prev, title_ko: finalTitleKo, summary_ko: finalSummaryKo }));
+      }
+
+      const payload = {
+        youtube_url: form.youtube_url,
+        video_id: form.video_id,
+        title: finalTitle,
+        title_ko: finalTitleKo,
+        summary: finalSummary || null,
+        summary_ko: finalSummaryKo || null,
+        published_date: form.published_date,
+        display_order: Number(form.display_order) || 0,
+        is_active: form.is_active,
+      };
+
+      setConfirmTranslateOpen(false);
+      executeSave(payload);
+      toast({
+        title: "자동 번역 및 저장 완료",
+        description: "반대 언어 번역본이 생성되어 함께 저장되었습니다.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "자동 번역 실패",
+        description: (err.message || "DeepL 번역 중 오류가 발생했습니다.") + " 현재 입력된 내용으로 저장합니다.",
+        variant: "destructive",
+      });
+      setConfirmTranslateOpen(false);
+      executeDirectSave();
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const executeDirectSave = () => {
+    setConfirmTranslateOpen(false);
+    const payload = {
+      youtube_url: form.youtube_url,
+      video_id: form.video_id,
+      title: form.title.trim(),
+      title_ko: form.title_ko.trim() || null,
+      summary: form.summary.trim() || null,
+      summary_ko: form.summary_ko.trim() || null,
+      published_date: form.published_date,
+      display_order: Number(form.display_order) || 0,
+      is_active: form.is_active,
+    };
+    executeSave(payload);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.youtube_url || !form.video_id) {
@@ -270,32 +352,30 @@ export default function AdminYouTubeTab() {
       });
       return;
     }
-    if (!form.title && !form.title_ko) {
+    if (!form.title.trim() && !form.title_ko.trim()) {
       toast({
         title: "입력 오류",
-        description: "영상 제목을 입력해주세요.",
+        description: "영상 제목을 최소 한 개 언어로 입력해주세요.",
         variant: "destructive",
       });
       return;
     }
 
-    const payload = {
-      youtube_url: form.youtube_url,
-      video_id: form.video_id,
-      title: form.title || form.title_ko,
-      title_ko: form.title_ko || form.title,
-      summary: form.summary || null,
-      summary_ko: form.summary_ko || null,
-      published_date: form.published_date,
-      display_order: Number(form.display_order) || 0,
-      is_active: form.is_active,
-    };
+    const hasKo = Boolean(form.title_ko.trim());
+    const hasEn = Boolean(form.title.trim());
 
-    if (editingVideo) {
-      updateMutation.mutate({ id: editingVideo.id, updates: payload });
-    } else {
-      createMutation.mutate(payload);
+    if (hasKo && !hasEn) {
+      setTranslateDirection("koToEn");
+      setConfirmTranslateOpen(true);
+      return;
     }
+    if (!hasKo && hasEn) {
+      setTranslateDirection("enToKo");
+      setConfirmTranslateOpen(true);
+      return;
+    }
+
+    executeDirectSave();
   };
 
   return (
@@ -533,40 +613,22 @@ export default function AdminYouTubeTab() {
                   </button>
                 </div>
 
-                {/* Auto Translate Trigger Button */}
-                {activeLangTab === "ko" ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleTranslateKoToEn}
-                    disabled={translating || !form.title_ko.trim()}
-                    className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
-                  >
-                    {translating ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    )}
-                    <span>영문으로 자동 번역</span>
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleTranslateEnToKo}
-                    disabled={translating || !form.title.trim()}
-                    className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
-                  >
-                    {translating ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    )}
-                    <span>국문으로 자동 번역</span>
-                  </Button>
-                )}
+                {/* Single Clean Auto-Translate Control Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={activeLangTab === "ko" ? handleTranslateKoToEn : handleTranslateEnToKo}
+                  disabled={translating || (activeLangTab === "ko" ? !form.title_ko.trim() : !form.title.trim())}
+                  className="h-8 px-2.5 text-xs font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1.5 rounded-lg"
+                >
+                  {translating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  )}
+                  <span>자동 번역</span>
+                </Button>
               </div>
 
               {/* Korean Tab Panel */}
@@ -688,6 +750,61 @@ export default function AdminYouTubeTab() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Auto Translate on Save Confirmation Alert */}
+      <AlertDialog open={confirmTranslateOpen} onOpenChange={setConfirmTranslateOpen}>
+        <AlertDialogContent className="max-w-md bg-white rounded-2xl">
+          <AlertDialogHeader>
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-1 border border-blue-100 shadow-2xs">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <AlertDialogTitle className="text-base font-bold text-slate-900">
+              {translateDirection === "koToEn"
+                ? "영문 번역본을 함께 생성하시겠습니까?"
+                : "국문 번역본을 함께 생성하시겠습니까?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600 space-y-2 leading-relaxed pt-1">
+              <p>
+                {translateDirection === "koToEn"
+                  ? "현재 국문 내용만 작성되어 있습니다. 글로벌 영문 방문자를 위해 DeepL로 자동 번역하여 함께 저장할까요?"
+                  : "현재 영문 내용만 작성되어 있습니다. 국내 국문 방문자를 위해 DeepL로 자동 번역하여 함께 저장할까요?"}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-col gap-2 mt-3">
+            <Button
+              className="w-full bg-[#0f2445] hover:bg-[#1a3a60] text-white text-xs h-9 font-semibold rounded-xl shadow-xs"
+              onClick={executeSaveWithAutoTranslate}
+              disabled={translating || createMutation.isPending || updateMutation.isPending}
+            >
+              {translating ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              자동 번역 후 저장
+            </Button>
+            <div className="flex items-center gap-2 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 text-xs h-8.5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                onClick={executeDirectSave}
+                disabled={translating || createMutation.isPending || updateMutation.isPending}
+              >
+                현재 언어만 저장
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-xs h-8.5 rounded-xl text-slate-500 hover:bg-slate-100"
+                onClick={() => setConfirmTranslateOpen(false)}
+                disabled={translating}
+              >
+                취소
+              </Button>
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Alert */}
       <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => !open && setDeleteTargetId(null)}>

@@ -659,14 +659,18 @@ export default function AdminPostsTab() {
 
   const openEdit = (post: Post) => {
     setEditing(post);
+    const isTitleSame = Boolean(post.title && post.title_ko && post.title.trim() === post.title_ko.trim());
+    const isContentSame = Boolean(post.content && post.content_ko && post.content.trim() === post.content_ko.trim());
+    const isExcerptSame = Boolean(post.excerpt && post.excerpt_ko && post.excerpt.trim() === post.excerpt_ko.trim());
+
     setForm({
       board: post.board,
-      title: post.title,
-      excerpt: post.excerpt,
-      content: post.content,
-      titleKo: post.title_ko || "",
-      excerptKo: post.excerpt_ko || "",
-      contentKo: post.content_ko || "",
+      title: isTitleSame ? "" : post.title,
+      excerpt: isExcerptSame ? "" : post.excerpt,
+      content: isContentSame ? "" : post.content,
+      titleKo: post.title_ko || (isTitleSame ? post.title : ""),
+      excerptKo: post.excerpt_ko || (isExcerptSame ? post.excerpt : ""),
+      contentKo: post.content_ko || (isContentSame ? post.content : ""),
       imageUrl: post.image_url || "",
       fileUrl: post.file_url || "",
       fileName: post.file_name || "",
@@ -729,9 +733,9 @@ export default function AdminPostsTab() {
       const finalContentKo = activeForm.contentKo.trim() || null;
       const finalExcerptKo = activeForm.excerptKo.trim() || (finalContentKo ? finalContentKo.slice(0, 150) : null);
 
-      const finalTitle = activeForm.title.trim() || finalTitleKo || "";
-      const finalContent = activeForm.content.trim() || finalContentKo || "";
-      const finalExcerpt = activeForm.excerpt.trim() || finalExcerptKo || (finalContent ? finalContent.slice(0, 150) : "");
+      const finalTitle = activeForm.title.trim();
+      const finalContent = activeForm.content.trim();
+      const finalExcerpt = activeForm.excerpt.trim() || (finalContent ? finalContent.slice(0, 150) : "");
 
       const payload: Record<string, any> = {
         board: activeForm.board,

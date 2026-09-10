@@ -38,14 +38,26 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export const useLang = () => useContext(LanguageContext);
 
-/** DB 콘텐츠 필드: 한국어 모드면 _ko 칼럼 우선, 없으면 영어로 폴백 */
-export function pickField<T extends object>(item: T, field: string, lang: Lang): string {
+/** DB 콘텐츠 필드: 언어 모드에 맞춰 최적의 텍스트 반환 및 양방향 안전 폴백 */
+export function pickField<T extends object>(item: T | null | undefined, field: string, lang: Lang): string {
+  if (!item) return "";
   const rec = item as Record<string, unknown>;
   if (lang === "ko") {
     const ko = rec[`${field}_ko`];
-    if (typeof ko === "string" && ko.trim()) return ko;
+    if (typeof ko === "string" && ko.trim()) return ko.trim();
+    const direct = rec[field];
+    if (typeof direct === "string" && direct.trim()) return direct.trim();
+    const en = rec[`${field}_en`];
+    if (typeof en === "string" && en.trim()) return en.trim();
+  } else {
+    const en = rec[`${field}_en`];
+    if (typeof en === "string" && en.trim()) return en.trim();
+    const direct = rec[field];
+    if (typeof direct === "string" && direct.trim()) return direct.trim();
+    const ko = rec[`${field}_ko`];
+    if (typeof ko === "string" && ko.trim()) return ko.trim();
   }
-  return (rec[field] as string) || "";
+  return "";
 }
 
 /** 고정 UI 문구 사전 */
