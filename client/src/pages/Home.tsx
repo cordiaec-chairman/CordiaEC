@@ -325,52 +325,54 @@ export default function Home() {
                 ) : (
                   <div className="space-y-3.5">
                     {reports.map((report: Post) => (
-                      <div
+                      <Link
                         key={report.id}
-                        onClick={() => navigate(`/reports/${report.id}`)}
-                        className="flex gap-4 bg-white border border-slate-200/80 rounded-xl p-3.5 sm:p-4 hover:shadow-md hover:border-slate-400 transition-all cursor-pointer group"
+                        href={`/reports/${report.id}`}
+                        className="block group"
                       >
-                        <div className="w-24 h-20 sm:w-28 sm:h-22 rounded-lg overflow-hidden shrink-0 bg-slate-50 border border-slate-200 flex items-center justify-center">
-                          {report.image_url ? (
-                            <img
-                              src={report.image_url}
-                              alt={report.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="flex flex-col items-center justify-center text-slate-600 text-center p-1">
-                              <FileText className="w-5 h-5 mb-0.5" />
-                              <span className="text-[9px] font-bold">REPORT</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
-                                Report
-                              </span>
-                            </div>
-                            <h4 className="font-bold text-sm text-slate-900 group-hover:text-[#0f2445] transition-colors line-clamp-1">
-                              {pickField(report, "title", lang)}
-                            </h4>
-                            <p className="text-xs text-slate-500 line-clamp-1 mt-1 leading-relaxed">
-                              {pickField(report, "excerpt", lang)}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(report.published_date).toLocaleDateString()}
-                            </span>
-                            {report.file_url && (
-                              <span className="text-[#0f2445] font-semibold flex items-center gap-0.5">
-                                <FileDown className="w-3 h-3" /> PDF
-                              </span>
+                        <div className="flex gap-4 bg-white border border-slate-200/80 rounded-xl p-3.5 sm:p-4 hover:shadow-md hover:border-slate-400 transition-all cursor-pointer">
+                          <div className="w-24 h-20 sm:w-28 sm:h-22 rounded-lg overflow-hidden shrink-0 bg-slate-50 border border-slate-200 flex items-center justify-center">
+                            {report.image_url ? (
+                              <img
+                                src={report.image_url}
+                                alt={report.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center justify-center text-slate-600 text-center p-1">
+                                <FileText className="w-5 h-5 mb-0.5" />
+                                <span className="text-[9px] font-bold">REPORT</span>
+                              </div>
                             )}
                           </div>
+                          <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                            <div>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
+                                  Report
+                                </span>
+                              </div>
+                              <h4 className="font-bold text-sm text-slate-900 group-hover:text-[#0f2445] transition-colors line-clamp-1">
+                                {pickField(report, "title", lang)}
+                              </h4>
+                              <p className="text-xs text-slate-500 line-clamp-1 mt-1 leading-relaxed">
+                                {pickField(report, "excerpt", lang)}
+                              </p>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(report.published_date).toLocaleDateString()}
+                              </span>
+                              {report.file_url && (
+                                <span className="text-[#0f2445] font-semibold flex items-center gap-0.5">
+                                  <FileDown className="w-3 h-3" /> PDF
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}
