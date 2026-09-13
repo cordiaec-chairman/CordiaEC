@@ -8,6 +8,7 @@ import { getPost } from "@/lib/queries";
 import type { Post } from "@/lib/database.types";
 import { useLang, useT, pickField } from "@/lib/i18n";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import SEO from "@/components/SEO";
 
 export default function NewsDetail() {
   const { lang } = useLang();
@@ -51,8 +52,18 @@ export default function NewsDetail() {
     );
   }
 
+  const postTitle = pickField(article, 'title', lang);
+  const postExcerpt = pickField(article, 'excerpt', lang);
+
   return (
     <Layout>
+      <SEO
+        title={postTitle}
+        description={postExcerpt}
+        image={article.image_url || undefined}
+        url={`https://k-dia.net/news/${article.id}`}
+        type="article"
+      />
       <article className="py-12 bg-white">
         <div className="container mx-auto px-4 max-w-3xl">
           <Button

@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, ChevronRight, CheckCircle2, ImageIcon } from "luci
 import { getInitiative, getPosts } from "@/lib/queries";
 import type { Post } from "@/lib/database.types";
 import { useLang, useT, pickField, formatInitiativeCategory } from "@/lib/i18n";
+import SEO from "@/components/SEO";
 
 export default function InitiativeDetail() {
   const { lang } = useLang();
@@ -74,8 +75,18 @@ export default function InitiativeDetail() {
   const contentLines = rawContent.split("\n").map(l => l.trim()).filter(Boolean);
   const isBulletList = contentLines.some(l => l.startsWith("•") || l.startsWith("-"));
 
+  const initiativeTitle = pickField(initiative, 'title', lang);
+  const initiativeDesc = pickField(initiative, 'description', lang);
+
   return (
     <Layout>
+      <SEO
+        title={initiativeTitle}
+        description={initiativeDesc}
+        image={initiative.image_url || undefined}
+        url={`https://k-dia.net/initiatives/${initiative.slug}`}
+        type="article"
+      />
       <article className="py-12 bg-white">
         <div className="container mx-auto px-4 max-w-4xl">
           <Button

@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,6 +56,11 @@ export default function News() {
 
   return (
     <Layout>
+      <SEO
+        title="새소식 (News)"
+        description="지구촌한인세상 꼬르디아(CordiaEC)의 최신 활동 소식, 공지사항 및 글로벌 한인 네트워크 보도자료를 전해드립니다."
+        url="https://k-dia.net/news"
+      />
       {/* Hero Section */}
       <section className="relative py-12 sm:py-16 bg-cordia-dark text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
@@ -111,43 +117,45 @@ export default function News() {
           ) : (
             <div className="space-y-4">
               {articles.map((article: Post) => (
-                <div
+                <Link
                   key={article.id}
-                  onClick={() => navigate(`/news/${article.id}`)}
-                  className="flex gap-4 bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-cordia-teal/30 transition-all cursor-pointer group"
+                  href={`/news/${article.id}`}
+                  className="block group"
                   data-testid={`row-news-${article.id}`}
                 >
-                  <div className="w-40 h-28 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
-                    {article.image_url ? (
-                      <img src={article.image_url} alt={article.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    )}
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between min-w-0">
-                    <div>
-                      <h3 className="font-semibold text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-2">
-                        {pickField(article, 'title', lang)}
-                      </h3>
-                      <p className="text-gray-600 text-sm line-clamp-2 mt-2">
-                        {pickField(article, 'excerpt', lang)}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(article.published_date).toLocaleDateString()}
-                      </span>
-                      {article.link_url && (
-                        <span className="flex items-center gap-1 text-cordia-teal">
-                          <ExternalLink className="w-3 h-3" />
-                          Link
-                        </span>
+                  <div className="flex gap-4 bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-cordia-teal/30 transition-all cursor-pointer">
+                    <div className="w-40 h-28 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                      {article.image_url ? (
+                        <img src={article.image_url} alt={article.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-gray-300" />
                       )}
                     </div>
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <h3 className="font-semibold text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-2">
+                          {pickField(article, 'title', lang)}
+                        </h3>
+                        <p className="text-gray-600 text-sm line-clamp-2 mt-2">
+                          {pickField(article, 'excerpt', lang)}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(article.published_date).toLocaleDateString()}
+                        </span>
+                        {article.link_url && (
+                          <span className="flex items-center gap-1 text-cordia-teal">
+                            <ExternalLink className="w-3 h-3" />
+                            Link
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cordia-teal shrink-0 self-center" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cordia-teal shrink-0 self-center" />
-                </div>
+                </Link>
               ))}
             </div>
           )}

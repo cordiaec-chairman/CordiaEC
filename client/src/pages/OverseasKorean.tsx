@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar, ImageIcon, ExternalLink, ChevronRight, Search } from "lucide-react";
@@ -48,6 +49,11 @@ export default function OverseasKorean() {
 
   return (
     <Layout>
+      <SEO
+        title="K-디아스포라 (Global Korean Diaspora)"
+        description="전 세계 750만 한인 디아스포라 및 중앙아시아 고려인의 역사, 문화, 글로벌 협력 지식 아카이브"
+        url="https://k-dia.net/overseas-korean"
+      />
       {/* Hero Section */}
       <section className="relative py-12 sm:py-16 bg-cordia-dark text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
@@ -104,43 +110,45 @@ export default function OverseasKorean() {
           ) : (
             <div className="space-y-4">
               {posts.map((post: Post) => (
-                <div
+                <Link
                   key={post.id}
-                  onClick={() => navigate(`/overseas-korean/${post.id}`)}
-                  className="flex gap-4 bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-cordia-teal/30 transition-all cursor-pointer group"
+                  href={`/overseas-korean/${post.id}`}
+                  className="block group"
                   data-testid={`row-diaspora-${post.id}`}
                 >
-                  <div className="w-40 h-28 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
-                    {post.image_url ? (
-                      <img src={post.image_url} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    )}
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between min-w-0">
-                    <div>
-                      <h3 className="font-semibold text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-2">
-                        {pickField(post, 'title', lang)}
-                      </h3>
-                      <p className="text-gray-600 text-sm line-clamp-2 mt-2">
-                        {pickField(post, 'excerpt', lang)}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(post.published_date).toLocaleDateString()}
-                      </span>
-                      {post.link_url && (
-                        <span className="flex items-center gap-1 text-cordia-teal">
-                          <ExternalLink className="w-3 h-3" />
-                          Link
-                        </span>
+                  <div className="flex gap-4 bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-cordia-teal/30 transition-all cursor-pointer">
+                    <div className="w-40 h-28 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                      {post.image_url ? (
+                        <img src={post.image_url} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-gray-300" />
                       )}
                     </div>
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <h3 className="font-semibold text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-2">
+                          {pickField(post, 'title', lang)}
+                        </h3>
+                        <p className="text-gray-600 text-sm line-clamp-2 mt-2">
+                          {pickField(post, 'excerpt', lang)}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(post.published_date).toLocaleDateString()}
+                        </span>
+                        {post.link_url && (
+                          <span className="flex items-center gap-1 text-cordia-teal">
+                            <ExternalLink className="w-3 h-3" />
+                            Link
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cordia-teal shrink-0 self-center" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cordia-teal shrink-0 self-center" />
-                </div>
+                </Link>
               ))}
             </div>
           )}

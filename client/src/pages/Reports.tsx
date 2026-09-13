@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar, ImageIcon, FileDown, ChevronRight, Search, FileText } from "lucide-react";
@@ -48,6 +49,11 @@ export default function Reports() {
 
   return (
     <Layout>
+      <SEO
+        title="산업분석 보고서 (Reports)"
+        description="부설 글로벌한인경제문화연구원의 전문 산업 분석 보고서 및 글로벌 한인 경제 정책 브리프 자료를 제공합니다."
+        url="https://k-dia.net/reports"
+      />
       {/* Hero Section */}
       <section className="relative py-12 sm:py-16 bg-cordia-dark text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
@@ -110,9 +116,9 @@ export default function Reports() {
                   className="flex flex-col sm:flex-row gap-4 bg-white border border-gray-100 rounded-xl p-4 sm:p-5 hover:shadow-md hover:border-cordia-teal/30 transition-all group"
                   data-testid={`row-report-${report.id}`}
                 >
-                  <div
-                    onClick={() => navigate(`/reports/${report.id}`)}
-                    className="w-full sm:w-44 h-32 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center cursor-pointer"
+                  <Link
+                    href={`/reports/${report.id}`}
+                    className="w-full sm:w-44 h-32 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center cursor-pointer block"
                   >
                     {report.image_url ? (
                       <img
@@ -128,7 +134,7 @@ export default function Reports() {
                         <span className="text-[11px] font-semibold text-gray-500">Industry Report</span>
                       </div>
                     )}
-                  </div>
+                  </Link>
 
                   <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
@@ -137,18 +143,14 @@ export default function Reports() {
                           Research Brief
                         </span>
                       </div>
-                      <h3
-                        onClick={() => navigate(`/reports/${report.id}`)}
-                        className="font-bold text-base sm:text-lg text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-2 cursor-pointer"
-                      >
-                        {pickField(report, "title", lang)}
-                      </h3>
-                      <p
-                        onClick={() => navigate(`/reports/${report.id}`)}
-                        className="text-gray-600 text-xs sm:text-sm line-clamp-2 mt-1.5 cursor-pointer leading-relaxed"
-                      >
-                        {pickField(report, "excerpt", lang)}
-                      </p>
+                      <Link href={`/reports/${report.id}`} className="block">
+                        <h3 className="font-bold text-base sm:text-lg text-cordia-dark group-hover:text-cordia-teal transition-colors line-clamp-2 cursor-pointer">
+                          {pickField(report, "title", lang)}
+                        </h3>
+                        <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 mt-1.5 cursor-pointer leading-relaxed">
+                          {pickField(report, "excerpt", lang)}
+                        </p>
+                      </Link>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400 mt-4 pt-3 border-t border-gray-50">
@@ -170,14 +172,12 @@ export default function Reports() {
                             PDF 다운로드
                           </a>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/reports/${report.id}`)}
-                          className="h-8 px-2.5 text-xs text-gray-600 hover:text-cordia-teal hover:bg-gray-50"
+                        <Link
+                          href={`/reports/${report.id}`}
+                          className="h-8 px-2.5 text-xs text-gray-600 hover:text-cordia-teal hover:bg-gray-50 inline-flex items-center rounded-md"
                         >
                           자세히 보기 <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                        </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

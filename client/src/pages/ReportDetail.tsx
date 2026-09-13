@@ -8,6 +8,7 @@ import { getPost } from "@/lib/queries";
 import type { Post } from "@/lib/database.types";
 import { useLang, useT, pickField } from "@/lib/i18n";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import SEO from "@/components/SEO";
 
 export default function ReportDetail() {
   const { lang } = useLang();
@@ -56,8 +57,18 @@ export default function ReportDetail() {
     );
   }
 
+  const reportTitle = pickField(report, "title", lang);
+  const reportExcerpt = pickField(report, "excerpt", lang);
+
   return (
     <Layout>
+      <SEO
+        title={reportTitle}
+        description={reportExcerpt}
+        image={report.image_url || undefined}
+        url={`https://k-dia.net/reports/${report.id}`}
+        type="article"
+      />
       <article className="py-10 sm:py-14 bg-white">
         <div className="container mx-auto px-4 max-w-3xl">
           <Button
