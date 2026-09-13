@@ -1,0 +1,51 @@
+# robots.txt for https://k-dia.net/
+# 사단법인/협동조합 지구촌한인세상 꼬르디아 (CordiaEC)
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+# Major Search Engines
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+
+User-agent: Yeti
+Allow: /
+Disallow: /admin
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+
+User-agent: Daumoa
+Allow: /
+Disallow: /admin
+
+# Generative AI Search Crawlers (GEO Optimization)
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /admin
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin
+
+User-agent: Applebot
+Allow: /
+Disallow: /admin
+
+Sitemap: https://k-dia.net/sitemap.xml

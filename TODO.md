@@ -32,14 +32,16 @@ GitHub 저장소 → Settings → Secrets and variables → Actions → New repo
 2. Vercel → Settings → Environment Variables → `DEEPL_API_KEY` 추가 → Redeploy
 3. 키 등록 전에도 사이트·KOR/ENG 토글은 정상 작동 (자동 번역 버튼만 비활성 에러)
 
-## 남은 아이디어 및 향후 핵심 과제 (미착수)
+## 🌟 2026년 9월 SEO & GEO(생성형 AI 검색 최적화) 완료
+- [x] **보고서 및 뉴스 SEO & GEO (Generative Engine Optimization / AI 검색 최적화) 세팅**:
+  - OpenGraph / Twitter Card 소셜 공유 카드 및 고화질 썸네일(`og-image.png`) 연동.
+  - Schema.org JSON-LD 구조화 데이터 (`Organization`, `WebSite`, `ResearchOrganization`) 주입으로 ChatGPT, Perplexity, Gemini, Google AI 등 생성형 AI 검색엔진의 지식 인덱싱(GEO) 극대화.
+  - 정식 사이트맵(`sitemap.xml`) 및 크롤러 정책(`robots.txt`) 구축 완료.
+  - 브라우저 탭 파비콘(`favicon.png`, `apple-touch-icon.png`) 공식 연동.
+- [x] 도메인 연결 및 Cloudflare WAF/DDoS 프록시 방어벽 가동 (`k-dia.net`, `www.k-dia.net`)
 
-- [ ] **보고서 및 뉴스 SEO & GEO (Generative Engine Optimization / AI 검색 최적화) 세팅**:
-  - OpenGraph / Twitter Card 동적 메타태그 완성 (각 보고서/뉴스별 맞춤 타이틀, 썸네일, 발췌문 반영).
-  - Schema.org JSON-LD 구조화 데이터 (`Article`, `Report`, `Organization`) 주입으로 구글 리치 검색결과 및 Perplexity, ChatGPT, Gemini 등 생성형 AI 검색엔진의 지식 인덱싱(GEO) 극대화.
-  - 사이트맵(`sitemap.xml`) 및 `robots.txt` 자동 갱신 파이프라인.
-- 코드 스플리팅으로 초기 번들 최적화 (dynamic import() 적용)
-- 도메인 연결 (Vercel → Settings → Domains)
+## 남은 아이디어 및 향후 핵심 과제 (미착수)
+- [ ] 코드 스플리팅으로 초기 번들 최적화 (dynamic import() 적용)
 
 ## 재개 시 컨텍스트 메모
 

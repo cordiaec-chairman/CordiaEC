@@ -1,8 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    
+    <!-- 1. 기본 SEO 메타태그 (포털 검색엔진용) -->
+    <title>지구촌한인세상 꼬르디아 | Cordia - 글로벌 한인 디아스포라 네트워크</title>
+    <meta name="description" content="지구촌한인세상 꼬르디아 협동조합(CordiaEC) 공식 웹사이트. 부설 글로벌한인경제문화연구원과 함께 전 세계 750만 재외동포와 고려인의 지식·문화·경제 네트워크를 연결하고 미래 상생 비전을 제시합니다." />
+    <meta name="keywords" content="지구촌한인세상, 꼬르디아, Cordia, CordiaEC, 디아스포라, 재외동포, 고려인, 한인네트워크, 글로벌한인경제문화연구원, KDec, 한국학, 공공외교" />
+    <meta name="author" content="지구촌한인세상 꼬르디아 협동조합" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://k-dia.net/" />
+    
+    <!-- 다국어 hreflang 지정 -->
+    <link rel="alternate" hreflang="ko" href="https://k-dia.net/" />
+    <link rel="alternate" hreflang="en" href="https://k-dia.net/" />
+    <link rel="alternate" hreflang="x-default" href="https://k-dia.net/" />
+
+    <!-- 파비콘 및 앱 아이콘 -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0f2445" />
+
+    <!-- 2. SNS 소셜 공유 메타태그 (카카오톡, 페이스북, 네이버 블로그 등) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="지구촌한인세상 꼬르디아 (CordiaEC)" />
+    <meta property="og:title" content="지구촌한인세상 꼬르디아 | Cordia - 글로벌 한인 디아스포라 네트워크" />
+    <meta property="og:description" content="전 세계 750만 재외동포와 중앙아시아 고려인을 잇는 글로벌 한인 지식·문화·경제 플랫폼" />
+    <meta property="og:image" content="https://k-dia.net/og-image.png" />
+    <meta property="og:url" content="https://k-dia.net/" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="지구촌한인세상 꼬르디아 | Cordia" />
+    <meta name="twitter:description" content="전 세계 750만 재외동포와 고려인을 잇는 글로벌 한인 디아스포라 지식 네트워크" />
+    <meta name="twitter:image" content="https://k-dia.net/og-image.png" />
+
+    <!-- 3. GEO (Generative Engine Optimization / AI 검색 최적화) Schema.org 구조화 데이터 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://k-dia.net/#organization",
+          "name": "지구촌한인세상 꼬르디아 협동조합",
+          "alternateName": ["Cordia", "CordiaEC", "지구촌한인세상", "Cordia Enterprise Cooperative"],
+          "url": "https://k-dia.net",
+          "logo": "https://k-dia.net/favicon.png",
+          "image": "https://k-dia.net/og-image.png",
+          "description": "지구촌한인세상 꼬르디아 협동조합(CordiaEC)은 부설 글로벌한인경제문화연구원과 함께 전 세계 750만 한인 디아스포라 및 고려인의 지식·문화·경제 네트워크 구축과 상생 협력을 주도합니다.",
+          "knowsAbout": [
+            "Korean Diaspora",
+            "Koryo-saram",
+            "Central Asia Koreans",
+            "Overseas Koreans Policy",
+            "Global Korean Economy",
+            "Korean Studies"
+          ],
+          "subOrganization": {
+            "@type": "ResearchOrganization",
+            "name": "글로벌한인경제문화연구원",
+            "alternateName": "KDec"
+          },
+          "sameAs": [
+            "https://k-dia.net"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://k-dia.net/#website",
+          "url": "https://k-dia.net",
+          "name": "지구촌한인세상 꼬르디아 공식 웹사이트",
+          "publisher": { "@id": "https://k-dia.net/#organization" },
+          "inLanguage": ["ko-KR", "en-US"]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
