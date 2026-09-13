@@ -828,9 +828,20 @@ export async function translateTexts(
 }
 
 // ============================================================
-// 이미지 업로드 (Storage + WebP 압축)
+// 이미지 업로드 (Storage + WebP 압축 + 보안 검증)
 // ============================================================
+const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
 export async function uploadImage(file: File): Promise<string> {
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  if (!ALLOWED_IMAGE_EXTENSIONS.includes(ext)) {
+    throw new Error("허용되지 않는 이미지 형식입니다. (JPG, PNG, WebP, GIF만 가능합니다)");
+  }
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    throw new Error("이미지 파일 크기는 최대 10MB까지만 업로드할 수 있습니다.");
+  }
+
   const compressed = await compressImage(file);
   const path = `${crypto.randomUUID()}.webp`;
 
@@ -881,15 +892,26 @@ async function compressImage(file: File): Promise<Blob> {
 }
 
 // ============================================================
-// PDF 보고서 파일 업로드
+// 보고서/자료 첨부파일 업로드 (보안 검증 및 크기 제한)
 // ============================================================
+const ALLOWED_DOC_EXTENSIONS = [".pdf", ".docx", ".hwp", ".xlsx", ".pptx", ".zip"];
+const MAX_DOC_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
+
 export async function uploadPdf(file: File): Promise<{ url: string; name: string }> {
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
+    throw new Error("보안을 위해 PDF, HWP, 워드, 엑셀, PPT, ZIP 문서 파일만 업로드할 수 있습니다.");
+  }
+  if (file.size > MAX_DOC_SIZE_BYTES) {
+    throw new Error("첨부 파일 크기는 최대 20MB까지만 업로드할 수 있습니다.");
+  }
+
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `${crypto.randomUUID()}_${sanitizedName}`;
 
   const { error } = await supabase.storage
     .from("report-files")
-    .upload(path, file, { contentType: file.type || "application/pdf", upsert: false });
+    .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
   if (error) throw error;
 
   const { data } = supabase.storage.from("report-files").getPublicUrl(path);

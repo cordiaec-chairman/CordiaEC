@@ -1,10 +1,10 @@
-name: Weekly Supabase Backup
+name: Daily Supabase Backup & Disaster Recovery
 
 on:
   schedule:
-    # 매주 월요일 00:00 UTC (한국시간 월요일 오전 9시)
-    - cron: "0 0 * * 1"
-  workflow_dispatch: {} # 수동 실행 버튼
+    # 매일 18:00 UTC (한국시간 매일 새벽 3시 자동 실행)
+    - cron: "0 18 * * *"
+  workflow_dispatch: {} # 수동 즉시 백업 실행 버튼
 
 permissions:
   contents: write
@@ -15,41 +15,55 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Dump tables to JSON
+      - name: Dump all database tables to JSON
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          # 공개 테이블은 anon key로 충분. contacts(개인정보)까지 백업하려면
-          # SUPABASE_SERVICE_ROLE_KEY 시크릿을 등록하세요 (없으면 contacts는 빈 배열).
           ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -e
           mkdir -p backups
           STAMP=$(date +%Y-%m-%d)
-          KEY="${SERVICE_KEY:-$ANON_KEY}"
+          
+          # 환경변수 우선 적용, 미설정 시 프로덕션 엔드포인트 자동 fallback
+          PROD_URL="https://pjgywtpysimaywlaaymj.supabase.co"
+          PROD_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqZ3l3dHB5c2ltYXl3bGFheW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNzg0ODQsImV4cCI6MjA2OTk1NDQ4NH0.0qRjDGxp8I1RIyD0TOdoDYiSJnQc1HhNikRq9v6y2ZY"
 
-          for TABLE in initiatives posts milestones site_settings hero_slides popups contacts; do
+          URL="${SUPABASE_URL:-$PROD_URL}"
+          KEY="${SERVICE_KEY:-${ANON_KEY:-$PROD_ANON}}"
+
+          echo "Target Supabase URL: $URL"
+
+          # 2026년 9월 기준 전체 9개 핵심 테이블 백업
+          for TABLE in initiatives posts milestones site_settings hero_slides popups contacts youtube_videos partners glossary; do
             echo "Backing up $TABLE..."
-            curl -sf "$SUPABASE_URL/rest/v1/$TABLE?select=*" \
+            curl -sf "$URL/rest/v1/$TABLE?select=*" \
               -H "apikey: $KEY" \
               -H "Authorization: Bearer $KEY" \
               -o "backups/${STAMP}_${TABLE}.json" || echo "[]" > "backups/${STAMP}_${TABLE}.json"
           done
 
-          # Storage 파일 목록도 기록
-          curl -sf "$SUPABASE_URL/storage/v1/object/list/post-images" \
+          # Storage 파일 목록 기록
+          curl -sf "$URL/storage/v1/object/list/post-images" \
             -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
             -H "Content-Type: application/json" \
             -d '{"prefix":"","limit":10000}' \
-            -o "backups/${STAMP}_storage_list.json" || true
+            -o "backups/${STAMP}_storage_images.json" || true
 
-          # 30개(약 한 달치) 이전 백업은 정리
-          ls -t backups/*.json 2>/dev/null | tail -n +211 | xargs rm -f 2>/dev/null || true
+          # 60일(약 두 달치) 이전 오래된 백업 파일 자동 정리
+          ls -t backups/*.json 2>/dev/null | tail -n +300 | xargs rm -f 2>/dev/null || true
 
-      - name: Commit backups
+      - name: Upload Artifact (90일 보관)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backups/*.json
+          retention-days: 90
+
+      - name: Commit backups to repository
         run: |
-          git config user.name "backup-bot"
-          git config user.email "backup-bot@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add backups/
-          git diff --staged --quiet || git commit -m "Automated backup $(date +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "chore(backup): automated daily database snapshot $(date +%Y-%m-%d)"
           git push

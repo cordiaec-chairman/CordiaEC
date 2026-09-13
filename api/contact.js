@@ -1,7 +1,30 @@
-// Vercel Serverless API: /api/contact
-// 1) Supabase contacts 테이블에 안전하게 저장
-// 2) cordiaec@gmail.com으로 문의 상세 내용 이메일 자동 발송 (Resend API)
-// 3) 스팸 봇 방지 (Honeypot) 및 오류 격리
+// IP 기반 슬라이딩 윈도우 요청 제한 (IP당 5분 내 최대 3회 허용)
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 3;
+const ipRequests = new Map(); // ip -> [timestamps]
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const timestamps = ipRequests.get(ip) || [];
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+
+  // 캐시 크기 관리 (오래된 항목 주기적 소각)
+  if (ipRequests.size > 1000) {
+    for (const [k, v] of ipRequests.entries()) {
+      if (v.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) {
+        ipRequests.delete(k);
+      }
+    }
+  }
+
+  if (recent.length >= MAX_REQUESTS_PER_WINDOW) {
+    return false; // 제한 초과
+  }
+
+  recent.push(now);
+  ipRequests.set(ip, recent);
+  return true; // 허용
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -9,9 +32,20 @@ export default async function handler(req, res) {
     return;
   }
 
+  // 1) Rate Limit 검사
+  const forwarded = req.headers["x-forwarded-for"];
+  const clientIp = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket?.remoteAddress || "unknown-ip";
+
+  if (!checkRateLimit(clientIp)) {
+    res.status(429).json({
+      error: "단시간에 너무 많은 문의가 접수되었습니다. 잠시 후(약 5분 뒤) 다시 시도해주세요.",
+    });
+    return;
+  }
+
   const { name, email, message, hp } = req.body || {};
 
-  // 1) Honeypot 검사: 숨겨진 인풋에 값이 채워져 있으면 스팸 봇
+  // 2) Honeypot 검사: 숨겨진 인풋에 값이 채워져 있으면 스팸 봇
   if (hp) {
     res.status(200).json({ success: true, message: "Message received" });
     return;

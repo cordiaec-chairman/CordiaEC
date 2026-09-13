@@ -1,0 +1,29 @@
+name: Supabase Project Keep-Alive
+
+on:
+  schedule:
+    # 3일마다 00:00 UTC (한국시간 오전 9시) 자동 실행
+    - cron: "0 0 */3 * *"
+  workflow_dispatch: {} # 수동 핑 테스트 버튼
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST endpoint to prevent pause
+        run: |
+          PROD_URL="https://pjgywtpysimaywlaaymj.supabase.co"
+          PROD_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqZ3l3dHB5c2ltYXl3bGFheW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNzg0ODQsImV4cCI6MjA2OTk1NDQ4NH0.0qRjDGxp8I1RIyD0TOdoDYiSJnQc1HhNikRq9v6y2ZY"
+
+          echo "Pinging Supabase at $(date -u)..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL/rest/v1/posts?select=id&limit=1" \
+            -H "apikey: $PROD_ANON" \
+            -H "Authorization: Bearer $PROD_ANON")
+
+          echo "Response HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Supabase project is active and alive!"
+          else
+            echo "⚠️ Unexpected response: $HTTP_STATUS"
+            exit 1
+          fi

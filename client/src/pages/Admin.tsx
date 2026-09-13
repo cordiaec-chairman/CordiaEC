@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
-import { Lock, FileText, Layers, History, LayoutGrid, Mail, LogOut, Images, Megaphone, Handshake, BookOpen, Video } from "lucide-react";
+import { Lock, FileText, Layers, History, LayoutGrid, Mail, LogOut, Images, Megaphone, Handshake, BookOpen, Video, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import AdminLoginForm from "@/components/admin/AdminLoginForm";
@@ -15,6 +15,7 @@ import AdminHeroTab from "@/components/admin/AdminHeroTab";
 import AdminPopupsTab from "@/components/admin/AdminPopupsTab";
 import AdminPartnersTab from "@/components/admin/AdminPartnersTab";
 import AdminYouTubeTab from "@/components/admin/AdminYouTubeTab";
+import AdminHealthTab from "@/components/admin/AdminHealthTab";
 
 const MENU = [
   { id: "hero", label: "히어로", icon: Images },
@@ -27,6 +28,7 @@ const MENU = [
   { id: "home", label: "홈/SNS 설정", icon: LayoutGrid },
   { id: "contacts", label: "문의함", icon: Mail },
   { id: "glossary", label: "번역 고정 용어집", icon: BookOpen },
+  { id: "health", label: "시스템 상태", icon: ShieldCheck },
 ] as const;
 
 type MenuId = (typeof MENU)[number]["id"];
@@ -124,6 +126,7 @@ export default function Admin() {
               {active === "milestones" && <AdminMilestonesTab />}
               {active === "home" && <AdminHomeSettingsTab />}
               {active === "contacts" && <AdminContactsTab />}
+              {active === "health" && <AdminHealthTab />}
             </section>
           </div>
         </div>
