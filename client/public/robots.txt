@@ -1,5 +1,5 @@
 # robots.txt for https://k-dia.net/
-# 사단법인/협동조합 지구촌한인세상 꼬르디아 (CordiaEC)
+# 지구촌한인세상 꼬르디아 협동조합 (CordiaEC)
 
 User-agent: *
 Allow: /
